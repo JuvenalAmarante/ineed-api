@@ -17,8 +17,6 @@ export class AuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException('Token inválido');
 
     try {
-      console.log(this.prisma)
-
       const acesso = await this.prisma.acesso.findFirst({
         where: {
           Token: token,
