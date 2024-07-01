@@ -3,6 +3,8 @@ import { CadastrarUsuarioDto } from './dto/cadastrar-usuario.dto';
 import { PrismaService } from 'src/shared/services/prisma/prisma.service';
 import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.entity';
 import { encriptar } from 'src/shared/helpers/encrypt.helper';
+import { AtualizarUsuarioDto } from './dto/atualizar-usuario.dto';
+import { AtualizarAtributoUsuarioDto } from './dto/atualizar-atributo-usuario.dto';
 
 @Injectable()
 export class UsuarioService {
@@ -52,6 +54,66 @@ export class UsuarioService {
             : false,
         CriadoEm: new Date(),
         Inativo: false,
+      },
+    });
+  }
+
+  async atualizar(id: number, atualizarUsuarioDto: AtualizarUsuarioDto | AtualizarAtributoUsuarioDto) {
+    if (atualizarUsuarioDto.Email) {
+      const emailExiste = await this.prisma.usuario.findFirst({
+        where: {
+          Email: atualizarUsuarioDto.Email,
+          Id: {
+            not: id,
+          },
+        },
+      });
+
+      if (emailExiste) throw new BadRequestException('Email já cadastrado');
+    }
+
+    if (atualizarUsuarioDto.CpfCnpj) {
+      const cpfCnpjExiste = await this.prisma.usuario.findFirst({
+        where: {
+          CpfCnpj: atualizarUsuarioDto.CpfCnpj,
+          Id: {
+            not: id,
+          },
+        },
+      });
+
+      if (cpfCnpjExiste)
+        throw new BadRequestException('CPF/CNPJ já cadastrado');
+    }
+
+    return this.prisma.usuario.update({
+      data: {
+        Email: atualizarUsuarioDto.Email || undefined,
+        Senha: atualizarUsuarioDto.Senha ? encriptar(atualizarUsuarioDto.Senha) : undefined,
+        Nome: atualizarUsuarioDto.Nome || undefined,
+        PerfilId: atualizarUsuarioDto.PerfilId || undefined,
+        TipoId: atualizarUsuarioDto.TipoId || undefined,
+        Endereco: atualizarUsuarioDto.Endereco || undefined,
+        Rg: atualizarUsuarioDto.Rg || undefined,
+        Cidade: atualizarUsuarioDto.Cidade || undefined,
+        Uf: atualizarUsuarioDto.Uf || undefined,
+        CpfCnpj: atualizarUsuarioDto.CpfCnpj || undefined,
+        Numero: atualizarUsuarioDto.Numero || undefined,
+        ImagemUrl: atualizarUsuarioDto.ImagemUrl || undefined,
+        Complemento: atualizarUsuarioDto.Complemento || undefined,
+        Cep: atualizarUsuarioDto.Cep || undefined,
+        Telefone: atualizarUsuarioDto.Telefone || undefined,
+        DataAniversario: atualizarUsuarioDto.DataAniversario || undefined,
+        IdTipoRedeSocial: atualizarUsuarioDto.IdTipoRedeSocial || undefined,
+        IdRedeSocial: atualizarUsuarioDto.IdRedeSocial || undefined,
+        CupomId: atualizarUsuarioDto.CupomId || undefined,
+        ContaRedeSocial:
+          atualizarUsuarioDto.ContaRedeSocial != null
+            ? atualizarUsuarioDto.ContaRedeSocial
+            : undefined,
+      },
+      where: {
+        Id: id,
       },
     });
   }
