@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../services/prisma/prisma.service';
+import { DadosUsuarioLogado } from '../entities/dados-usuario-logado.entity';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -22,10 +23,15 @@ export class AuthGuard implements CanActivate {
           Token: token,
         },
       });
-      
+
       if (!acesso) throw new UnauthorizedException('Token inválido');
 
-      request['usuario'] = { Id: acesso.UsuarioId };
+      const dadosUsuario: DadosUsuarioLogado = {
+        Id: acesso.UsuarioId,
+        Token: token,
+      };
+
+      request['usuario'] = dadosUsuario;
     } catch {
       throw new UnauthorizedException('Token inválido');
     }

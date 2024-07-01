@@ -36,5 +36,17 @@ export class AuthService {
         usuarioId: usuario.Id,
         token,
       };
+
+    return;
+  }
+
+  async logout(token: string) {
+    await this.prisma.acesso.deleteMany({
+      where: {
+        Token: token,
+      },
+    });
+
+    return;
   }
 }
