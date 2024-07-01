@@ -5,6 +5,7 @@ import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.ent
 import { encriptar } from 'src/shared/helpers/encrypt.helper';
 import { AtualizarUsuarioDto } from './dto/atualizar-usuario.dto';
 import { AtualizarAtributoUsuarioDto } from './dto/atualizar-atributo-usuario.dto';
+import { AtualizarSenhaUsuarioDto } from './dto/atualizar-senha-usuario.dto';
 
 @Injectable()
 export class UsuarioService {
@@ -59,6 +60,14 @@ export class UsuarioService {
   }
 
   async atualizar(id: number, atualizarUsuarioDto: AtualizarUsuarioDto | AtualizarAtributoUsuarioDto) {
+    const usuario = await this.prisma.usuario.findFirst({
+      where: {
+        Id: id,
+      },
+    });
+
+    if (!usuario) throw new BadRequestException('Usuário não cadastrado');
+
     if (atualizarUsuarioDto.Email) {
       const emailExiste = await this.prisma.usuario.findFirst({
         where: {
@@ -116,5 +125,33 @@ export class UsuarioService {
         Id: id,
       },
     });
+  }
+
+  async atualizarSenha(id: number, atualizarSenhaUsuarioDto: AtualizarSenhaUsuarioDto) {
+    const usuario = await this.prisma.usuario.findFirst({
+      where: {
+        Id: id,
+      },
+    });
+
+    if (!usuario) throw new BadRequestException('Usuário não cadastrado');
+
+    const senhaAtualValida = await this.prisma.usuario.findFirst({
+      where: {
+        Id: id,
+        Senha: encriptar(atualizarSenhaUsuarioDto.senhaAtual)
+      },
+    });
+
+    if (!senhaAtualValida) throw new BadRequestException('Senha atual incorreta');
+
+    await this.prisma.usuario.update({
+      data: {
+        Senha: encriptar(atualizarSenhaUsuarioDto.novaSenha)
+      },
+      where: {
+        Id: id
+      }
+    })
   }
 }

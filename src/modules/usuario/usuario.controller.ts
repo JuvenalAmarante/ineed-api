@@ -16,6 +16,7 @@ import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.ent
 import { CadastrarUsuarioDto } from './dto/cadastrar-usuario.dto';
 import { AtualizarUsuarioDto } from './dto/atualizar-usuario.dto';
 import { AtualizarAtributoUsuarioDto } from './dto/atualizar-atributo-usuario.dto';
+import { AtualizarSenhaUsuarioDto } from './dto/atualizar-senha-usuario.dto';
 
 @Controller('usuario')
 export class UsuarioController {
@@ -41,6 +42,7 @@ export class UsuarioController {
   }
 
   @Put('atualizar')
+  @UseGuards(AuthGuard)
   async atualizar(@Body() atualizarUsuarioDto: AtualizarUsuarioDto, @CurrentUser() usuario: DadosUsuarioLogado) {
     const data = await this.usuarioService.atualizar(usuario.Id, atualizarUsuarioDto);
 
@@ -51,12 +53,24 @@ export class UsuarioController {
   }
 
   @Put('atualizar/atributo')
+  @UseGuards(AuthGuard)
   async atualizarAtributo(@Body() atualizarAtributoUsuarioDto: AtualizarAtributoUsuarioDto, @CurrentUser() usuario: DadosUsuarioLogado) {
     const data = await this.usuarioService.atualizar(usuario.Id, atualizarAtributoUsuarioDto);
 
     return {
       Usuario: data,
       message: 'Usuário atualizado com sucesso',
+    };
+  }
+
+  @Patch('atualizarSenha')
+  @UseGuards(AuthGuard)
+  async atualizarSenha(@Body() atualizarSenhaUsuarioDto: AtualizarSenhaUsuarioDto, @CurrentUser() usuario: DadosUsuarioLogado) {
+    const data = await this.usuarioService.atualizarSenha(usuario.Id, atualizarSenhaUsuarioDto);
+
+    return {
+      Usuario: data,
+      message: 'Senha atualizada com sucesso',
     };
   }
 }
