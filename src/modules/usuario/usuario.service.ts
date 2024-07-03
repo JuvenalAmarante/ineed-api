@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { FiltroListarTodosUsuarioDto } from './dto/filtro-listar-todos-usuario.dto';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CadastrarUsuarioDto } from './dto/cadastrar-usuario.dto';
 import { PrismaService } from 'src/shared/services/prisma/prisma.service';
 import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.entity';
@@ -6,23 +11,28 @@ import { encriptar } from 'src/shared/helpers/encrypt.helper';
 import { AtualizarUsuarioDto } from './dto/atualizar-usuario.dto';
 import { AtualizarAtributoUsuarioDto } from './dto/atualizar-atributo-usuario.dto';
 import { AtualizarSenhaUsuarioDto } from './dto/atualizar-senha-usuario.dto';
+import { PerfilEnum } from 'src/shared/enums/perfil.enum';
 
 @Injectable()
 export class UsuarioService {
   constructor(private readonly prisma: PrismaService) {}
 
-  listarDados(usuario: DadosUsuarioLogado) {
-    return this.prisma.usuario.findFirst({
+  async listarDados(usuario: DadosUsuarioLogado) {
+    const dados = await this.prisma.usuario.findFirst({
       where: {
-        Id: usuario.Id,
+        id: usuario.Id,
       },
     });
+
+    dados.senha = null;
+
+    return dados;
   }
 
   async cadastrar(cadastrarUsuarioDto: CadastrarUsuarioDto) {
     const usuario = await this.prisma.usuario.findFirst({
       where: {
-        Email: cadastrarUsuarioDto.Email,
+        email: cadastrarUsuarioDto.Email,
       },
     });
 
@@ -30,39 +40,42 @@ export class UsuarioService {
 
     return this.prisma.usuario.create({
       data: {
-        Email: cadastrarUsuarioDto.Email,
-        Senha: encriptar(cadastrarUsuarioDto.Senha),
-        Nome: cadastrarUsuarioDto.Nome,
-        PerfilId: cadastrarUsuarioDto.PerfilId,
-        TipoId: cadastrarUsuarioDto.TipoId,
-        Endereco: cadastrarUsuarioDto.Endereco || undefined,
-        Rg: cadastrarUsuarioDto.Rg || undefined,
-        Cidade: cadastrarUsuarioDto.Cidade || undefined,
-        Uf: cadastrarUsuarioDto.Uf || undefined,
-        CpfCnpj: cadastrarUsuarioDto.CpfCnpj || undefined,
-        Numero: cadastrarUsuarioDto.Numero || undefined,
-        ImagemUrl: cadastrarUsuarioDto.ImagemUrl || undefined,
-        Complemento: cadastrarUsuarioDto.Complemento || undefined,
-        Cep: cadastrarUsuarioDto.Cep || undefined,
-        Telefone: cadastrarUsuarioDto.Telefone || undefined,
-        DataAniversario: cadastrarUsuarioDto.DataAniversario || undefined,
-        IdTipoRedeSocial: cadastrarUsuarioDto.IdTipoRedeSocial || 0,
-        IdRedeSocial: cadastrarUsuarioDto.IdRedeSocial || undefined,
-        CupomId: cadastrarUsuarioDto.CupomId || undefined,
-        ContaRedeSocial:
+        email: cadastrarUsuarioDto.Email,
+        senha: encriptar(cadastrarUsuarioDto.Senha),
+        nome: cadastrarUsuarioDto.Nome,
+        perfilId: cadastrarUsuarioDto.PerfilId,
+        tipoId: cadastrarUsuarioDto.TipoId,
+        endereco: cadastrarUsuarioDto.Endereco || undefined,
+        rg: cadastrarUsuarioDto.Rg || undefined,
+        cidade: cadastrarUsuarioDto.Cidade || undefined,
+        uf: cadastrarUsuarioDto.Uf || undefined,
+        cpfCnpj: cadastrarUsuarioDto.CpfCnpj || undefined,
+        numero: cadastrarUsuarioDto.Numero || undefined,
+        imagemUrl: cadastrarUsuarioDto.ImagemUrl || undefined,
+        complemento: cadastrarUsuarioDto.Complemento || undefined,
+        cep: cadastrarUsuarioDto.Cep || undefined,
+        telefone: cadastrarUsuarioDto.Telefone || undefined,
+        dataAniversario: cadastrarUsuarioDto.DataAniversario || undefined,
+        idTipoRedeSocial: cadastrarUsuarioDto.IdTipoRedeSocial || 0,
+        idRedeSocial: cadastrarUsuarioDto.IdRedeSocial || undefined,
+        cupomId: cadastrarUsuarioDto.CupomId || undefined,
+        contaRedeSocial:
           cadastrarUsuarioDto.ContaRedeSocial != null
             ? cadastrarUsuarioDto.ContaRedeSocial
             : false,
-        CriadoEm: new Date(),
-        Inativo: false,
+        criadoEm: new Date(),
+        inativo: false,
       },
     });
   }
 
-  async atualizar(id: number, atualizarUsuarioDto: AtualizarUsuarioDto | AtualizarAtributoUsuarioDto) {
+  async atualizar(
+    id: number,
+    atualizarUsuarioDto: AtualizarUsuarioDto | AtualizarAtributoUsuarioDto,
+  ) {
     const usuario = await this.prisma.usuario.findFirst({
       where: {
-        Id: id,
+        id: id,
       },
     });
 
@@ -71,8 +84,8 @@ export class UsuarioService {
     if (atualizarUsuarioDto.Email) {
       const emailExiste = await this.prisma.usuario.findFirst({
         where: {
-          Email: atualizarUsuarioDto.Email,
-          Id: {
+          email: atualizarUsuarioDto.Email,
+          id: {
             not: id,
           },
         },
@@ -84,8 +97,8 @@ export class UsuarioService {
     if (atualizarUsuarioDto.CpfCnpj) {
       const cpfCnpjExiste = await this.prisma.usuario.findFirst({
         where: {
-          CpfCnpj: atualizarUsuarioDto.CpfCnpj,
-          Id: {
+          cpfCnpj: atualizarUsuarioDto.CpfCnpj,
+          id: {
             not: id,
           },
         },
@@ -97,40 +110,45 @@ export class UsuarioService {
 
     return this.prisma.usuario.update({
       data: {
-        Email: atualizarUsuarioDto.Email || undefined,
-        Senha: atualizarUsuarioDto.Senha ? encriptar(atualizarUsuarioDto.Senha) : undefined,
-        Nome: atualizarUsuarioDto.Nome || undefined,
-        PerfilId: atualizarUsuarioDto.PerfilId || undefined,
-        TipoId: atualizarUsuarioDto.TipoId || undefined,
-        Endereco: atualizarUsuarioDto.Endereco || undefined,
-        Rg: atualizarUsuarioDto.Rg || undefined,
-        Cidade: atualizarUsuarioDto.Cidade || undefined,
-        Uf: atualizarUsuarioDto.Uf || undefined,
-        CpfCnpj: atualizarUsuarioDto.CpfCnpj || undefined,
-        Numero: atualizarUsuarioDto.Numero || undefined,
-        ImagemUrl: atualizarUsuarioDto.ImagemUrl || undefined,
-        Complemento: atualizarUsuarioDto.Complemento || undefined,
-        Cep: atualizarUsuarioDto.Cep || undefined,
-        Telefone: atualizarUsuarioDto.Telefone || undefined,
-        DataAniversario: atualizarUsuarioDto.DataAniversario || undefined,
-        IdTipoRedeSocial: atualizarUsuarioDto.IdTipoRedeSocial || undefined,
-        IdRedeSocial: atualizarUsuarioDto.IdRedeSocial || undefined,
-        CupomId: atualizarUsuarioDto.CupomId || undefined,
-        ContaRedeSocial:
+        email: atualizarUsuarioDto.Email || undefined,
+        senha: atualizarUsuarioDto.Senha
+          ? encriptar(atualizarUsuarioDto.Senha)
+          : undefined,
+        nome: atualizarUsuarioDto.Nome || undefined,
+        perfilId: atualizarUsuarioDto.PerfilId || undefined,
+        tipoId: atualizarUsuarioDto.TipoId || undefined,
+        endereco: atualizarUsuarioDto.Endereco || undefined,
+        rg: atualizarUsuarioDto.Rg || undefined,
+        cidade: atualizarUsuarioDto.Cidade || undefined,
+        uf: atualizarUsuarioDto.Uf || undefined,
+        cpfCnpj: atualizarUsuarioDto.CpfCnpj || undefined,
+        numero: atualizarUsuarioDto.Numero || undefined,
+        imagemUrl: atualizarUsuarioDto.ImagemUrl || undefined,
+        complemento: atualizarUsuarioDto.Complemento || undefined,
+        cep: atualizarUsuarioDto.Cep || undefined,
+        telefone: atualizarUsuarioDto.Telefone || undefined,
+        dataAniversario: atualizarUsuarioDto.DataAniversario || undefined,
+        idTipoRedeSocial: atualizarUsuarioDto.IdTipoRedeSocial || undefined,
+        idRedeSocial: atualizarUsuarioDto.IdRedeSocial || undefined,
+        cupomId: atualizarUsuarioDto.CupomId || undefined,
+        contaRedeSocial:
           atualizarUsuarioDto.ContaRedeSocial != null
             ? atualizarUsuarioDto.ContaRedeSocial
             : undefined,
       },
       where: {
-        Id: id,
+        id,
       },
     });
   }
 
-  async atualizarSenha(id: number, atualizarSenhaUsuarioDto: AtualizarSenhaUsuarioDto) {
+  async atualizarSenha(
+    id: number,
+    atualizarSenhaUsuarioDto: AtualizarSenhaUsuarioDto,
+  ) {
     const usuario = await this.prisma.usuario.findFirst({
       where: {
-        Id: id,
+        id,
       },
     });
 
@@ -138,20 +156,53 @@ export class UsuarioService {
 
     const senhaAtualValida = await this.prisma.usuario.findFirst({
       where: {
-        Id: id,
-        Senha: encriptar(atualizarSenhaUsuarioDto.senhaAtual)
+        id,
+        senha: encriptar(atualizarSenhaUsuarioDto.senhaAtual),
       },
     });
 
-    if (!senhaAtualValida) throw new BadRequestException('Senha atual incorreta');
+    if (!senhaAtualValida)
+      throw new BadRequestException('Senha atual incorreta');
 
     await this.prisma.usuario.update({
       data: {
-        Senha: encriptar(atualizarSenhaUsuarioDto.novaSenha)
+        senha: encriptar(atualizarSenhaUsuarioDto.novaSenha),
       },
       where: {
-        Id: id
-      }
-    })
+        id,
+      },
+    });
+  }
+
+  async listarTodos(
+    usuario: DadosUsuarioLogado,
+    filtroListarTodosUsuarioDto: FiltroListarTodosUsuarioDto,
+  ) {
+    if (![PerfilEnum.ADMIN, PerfilEnum.FORNECEDOR].includes(usuario.PerfilId))
+      throw new UnauthorizedException('O usuário não tem permissão de acesso');
+
+    const listaUsuarios = await this.prisma.usuario.findMany({
+      include: {
+        tipo: true,
+        cupom: true,
+      },
+      where: {
+        OR: [
+          {
+            nome: {
+              contains: filtroListarTodosUsuarioDto.nome,
+            },
+          },
+          {
+            email: {
+              contains: filtroListarTodosUsuarioDto.nome,
+            },
+          },
+        ],
+        perfilId: filtroListarTodosUsuarioDto.profileId || undefined,
+      },
+    });
+
+    return listaUsuarios;
   }
 }

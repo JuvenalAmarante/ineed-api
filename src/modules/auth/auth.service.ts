@@ -17,8 +17,8 @@ export class AuthService {
   async login(loginDto: LoginDto, device: string) {
     const usuario = await this.prisma.usuario.findFirst({
       where: {
-        Email: loginDto.Email,
-        Senha: encriptar(loginDto.Senha),
+        email: loginDto.Email,
+        senha: encriptar(loginDto.Senha),
       },
     });
 
@@ -28,7 +28,7 @@ export class AuthService {
 
     await this.prisma.acesso.create({
       data: {
-        UsuarioId: usuario.Id,
+        UsuarioId: usuario.id,
         Token: token,
         Device: device,
       },
@@ -38,8 +38,8 @@ export class AuthService {
       return {
         acept: ' Acesso permitido',
         device: device,
-        perfilId: usuario.PerfilId,
-        usuarioId: usuario.Id,
+        perfilId: usuario.perfilId,
+        usuarioId: usuario.id,
         token,
       };
 
@@ -60,7 +60,7 @@ export class AuthService {
     return this.prisma.$transaction(async (transaction) => {
       const usuario = await this.prisma.usuario.findFirst({
         where: {
-          Email: recuperarSenhaDto.email,
+          email: recuperarSenhaDto.email,
         },
       });
 
@@ -71,10 +71,10 @@ export class AuthService {
 
       await transaction.usuario.update({
         data: {
-          Senha: encriptar(novaSenha),
+          senha: encriptar(novaSenha),
         },
         where: {
-          Id: usuario.Id,
+          id: usuario.id,
         },
       });
 

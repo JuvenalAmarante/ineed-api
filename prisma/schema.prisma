@@ -23,7 +23,7 @@ model Acesso {
   UsuarioId Int
   Device    String  @db.NVarChar(200)
   FcmToken  String? @db.NVarChar(Max)
-  Usuario   Usuario @relation(fields: [UsuarioId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Acesso_dbo.Usuario_UsuarioId")
+  Usuario   Usuario @relation(fields: [UsuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Acesso_dbo.Usuario_UsuarioId")
 
   @@index([UsuarioId], map: "IX_UsuarioId")
 }
@@ -172,7 +172,7 @@ model OrcamentoUsuarioColaborador {
   OrcamentoId          Int
   UsuarioColaboradorId Int
   Orcamento            Orcamento @relation(fields: [OrcamentoId], references: [Id], onUpdate: NoAction, map: "FK_dbo.OrcamentoUsuarioColaborador_dbo.Orcamento_OrcamentoId")
-  Usuario              Usuario   @relation(fields: [UsuarioColaboradorId], references: [Id], onUpdate: NoAction, map: "FK_dbo.OrcamentoUsuarioColaborador_dbo.Usuario_UsuarioColaboradorId")
+  Usuario              Usuario   @relation(fields: [UsuarioColaboradorId], references: [id], onUpdate: NoAction, map: "FK_dbo.OrcamentoUsuarioColaborador_dbo.Usuario_UsuarioColaboradorId")
 
   @@id([OrcamentoId, UsuarioColaboradorId], map: "PK_dbo.OrcamentoUsuarioColaborador")
   @@index([OrcamentoId], map: "IX_OrcamentoId")
@@ -199,7 +199,7 @@ model Requisicao {
   CreditCardEfi_Id Int?
   Orcamento        Orcamento[]
   CreditCardEfi    CreditCardEfi? @relation(fields: [CreditCardEfi_Id], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Requisicao_dbo.CreditCardEfi_CreditCardEfi_Id")
-  Usuario          Usuario        @relation(fields: [UsuarioId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Requisicao_dbo.Usuario_UsuarioId")
+  Usuario          Usuario        @relation(fields: [UsuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Requisicao_dbo.Usuario_UsuarioId")
   Visita           Visita[]
 
   @@index([CreditCardEfi_Id], map: "IX_CreditCardEfi_Id")
@@ -248,7 +248,7 @@ model Solicitacao {
   ImagemSolicitacao  ImagemSolicitacao[]
   Orcamento          Orcamento[]
   ServicoSolicitacao ServicoSolicitacao[]
-  Usuario            Usuario              @relation(fields: [UsuarioId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Solicitacao_dbo.Usuario_UsuarioId")
+  Usuario            Usuario              @relation(fields: [UsuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Solicitacao_dbo.Usuario_UsuarioId")
   Visita             Visita[]
 
   @@index([UsuarioId], map: "IX_UsuarioId")
@@ -289,40 +289,41 @@ model Transacao {
 }
 
 model Usuario {
-  Id                          Int                           @id(map: "PK_dbo.Usuario") @default(autoincrement())
-  Nome                        String                        @db.NVarChar(200)
-  Email                       String                        @db.NVarChar(100)
-  Senha                       String                        @db.NVarChar(200)
-  Rg                          String?                       @db.NVarChar(Max)
-  CpfCnpj                     String?                       @db.NVarChar(18)
-  Endereco                    String?                       @db.NVarChar(Max)
-  Numero                      Int?
-  Cep                         String?                       @db.NVarChar(Max)
-  Telefone                    String?                       @db.NVarChar(Max)
-  Cidade                      String?                       @db.NVarChar(Max)
-  ImagemUrl                   String?                       @db.NVarChar(Max)
-  Uf                          String?                       @db.NVarChar(Max)
-  PerfilId                    Int
-  TipoId                      Int
-  DataAniversario             DateTime?                     @db.DateTime
-  ContaRedeSocial             Boolean
-  Inativo                     Boolean
-  Complemento                 String?                       @db.NVarChar(Max)
-  CriadoEm                    DateTime                      @db.DateTime
-  IdTipoRedeSocial            Int
-  IdRedeSocial                String?                       @db.NVarChar(Max)
-  CupomId                     Int?
-  Bairro                      String?                       @db.NVarChar(Max)
-  Acesso                      Acesso[]
-  OrcamentoUsuarioColaborador OrcamentoUsuarioColaborador[]
-  Requisicao                  Requisicao[]
-  Solicitacao                 Solicitacao[]
-  Cupom                       Cupom?                        @relation(fields: [CupomId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Cupom_CupomId")
-  Tipo                        Tipo                          @relation(fields: [TipoId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Tipo_TipoId")
-  VisitaUsuarioColaborador    VisitaUsuarioColaborador[]
+  id               Int       @id(map: "PK_dbo.Usuario") @default(autoincrement()) @map("Id")
+  nome             String    @map("Nome") @db.NVarChar(200)
+  email            String    @map("Email") @db.NVarChar(100)
+  senha            String    @map("Senha") @db.NVarChar(200)
+  rg               String?   @map("Rg") @db.NVarChar(Max)
+  cpfCnpj          String?   @map("CpfCnpj") @db.NVarChar(18)
+  endereco         String?   @map("Endereco") @db.NVarChar(Max)
+  numero           Int?      @map("Numero")
+  cep              String?   @map("Cep") @db.NVarChar(Max)
+  telefone         String?   @map("Telefone") @db.NVarChar(Max)
+  cidade           String?   @map("Cidade") @db.NVarChar(Max)
+  imagemUrl        String?   @map("ImagemUrl") @db.NVarChar(Max)
+  uf               String?   @map("Uf") @db.NVarChar(Max)
+  perfilId         Int       @map("PerfilId")
+  tipoId           Int       @map("TipoId")
+  dataAniversario  DateTime? @map("DataAniversario") @db.DateTime
+  contaRedeSocial  Boolean   @map("ContaRedeSocial")
+  inativo          Boolean   @map("Inativo")
+  complemento      String?   @map("Complemento") @db.NVarChar(Max)
+  criadoEm         DateTime  @map("CriadoEm") @db.DateTime
+  idTipoRedeSocial Int       @map("IdTipoRedeSocial")
+  idRedeSocial     String?   @map("IdRedeSocial") @db.NVarChar(Max)
+  cupomId          Int?      @map("CupomId")
+  bairro           String?   @map("Bairro") @db.NVarChar(Max)
 
-  @@index([CupomId], map: "IX_CupomId")
-  @@index([TipoId], map: "IX_TipoId")
+  acesso                      Acesso[]
+  orcamentoUsuarioColaborador OrcamentoUsuarioColaborador[]
+  requisicao                  Requisicao[]
+  solicitacao                 Solicitacao[]
+  cupom                       Cupom?                        @relation(fields: [cupomId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Cupom_CupomId")
+  tipo                        Tipo                          @relation(fields: [tipoId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Tipo_TipoId")
+  visitaUsuarioColaborador    VisitaUsuarioColaborador[]
+
+  @@index([cupomId], map: "IX_CupomId")
+  @@index([tipoId], map: "IX_TipoId")
 }
 
 model Visita {
@@ -353,7 +354,7 @@ model Visita {
 model VisitaUsuarioColaborador {
   VisitaId             Int
   UsuarioColaboradorId Int
-  Usuario              Usuario @relation(fields: [UsuarioColaboradorId], references: [Id], onUpdate: NoAction, map: "FK_dbo.VisitaUsuarioColaborador_dbo.Usuario_UsuarioColaboradorId")
+  Usuario              Usuario @relation(fields: [UsuarioColaboradorId], references: [id], onUpdate: NoAction, map: "FK_dbo.VisitaUsuarioColaborador_dbo.Usuario_UsuarioColaboradorId")
   Visita               Visita  @relation(fields: [VisitaId], references: [Id], onUpdate: NoAction, map: "FK_dbo.VisitaUsuarioColaborador_dbo.Visita_VisitaId")
 
   @@id([VisitaId, UsuarioColaboradorId], map: "PK_dbo.VisitaUsuarioColaborador")

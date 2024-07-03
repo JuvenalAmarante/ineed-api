@@ -19,6 +19,9 @@ export class AuthGuard implements CanActivate {
 
     try {
       const acesso = await this.prisma.acesso.findFirst({
+        include: {
+          Usuario: true
+        },
         where: {
           Token: token,
         },
@@ -29,6 +32,7 @@ export class AuthGuard implements CanActivate {
       const dadosUsuario: DadosUsuarioLogado = {
         Id: acesso.UsuarioId,
         Token: token,
+        PerfilId: acesso.Usuario.perfilId,
       };
 
       request['usuario'] = dadosUsuario;
