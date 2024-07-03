@@ -57,9 +57,9 @@ model Cidade {
 }
 
 model Configuracao {
-  Id                            Int   @id(map: "PK_dbo.Configuracao") @default(autoincrement())
-  MaximoParcelas                Int
-  TaxaVisitasUrgentes           Float
+  id                            Int   @id(map: "PK_dbo.Configuracao") @default(autoincrement()) @map("Id")
+  maximoParcelas                Int   @map("MaximoParcelas")
+  taxaVisitasUrgentes           Float @map("TaxaVisitasUrgentes")
   maximoOrcamentos              Int
   descontoPadrao                Int
   usoRestanteCupom              Int
