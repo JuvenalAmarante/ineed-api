@@ -3,10 +3,16 @@ import { PrismaService } from '../../shared/services/prisma/prisma.service';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { encriptar } from 'src/shared/helpers/encrypt.helper';
 import { gerarToken } from 'src/shared/helpers/token.helper';
+import { RecuperarSenhaDto } from './dto/recuperar-senha.dto';
+import { gerarSenhaPadrao } from 'src/shared/helpers/password.helper';
+import { MailService } from 'src/shared/services/mail/mail.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async login(loginDto: LoginDto, device: string) {
     const usuario = await this.prisma.usuario.findFirst({
@@ -48,5 +54,37 @@ export class AuthService {
     });
 
     return;
+  }
+
+  async recuperarSenha(recuperarSenhaDto: RecuperarSenhaDto) {
+    return this.prisma.$transaction(async (transaction) => {
+      const usuario = await this.prisma.usuario.findFirst({
+        where: {
+          Email: recuperarSenhaDto.email,
+        },
+      });
+
+      if (!usuario)
+        throw new BadRequestException('Email de recuperação não encontrado');
+
+      const novaSenha = gerarSenhaPadrao();
+
+      await transaction.usuario.update({
+        data: {
+          Senha: encriptar(novaSenha),
+        },
+        where: {
+          Id: usuario.Id,
+        },
+      });
+
+      const conteudoEmail = `<b> Você Solicitou a Recuperação de sua Senha<b/><b/><b/><br/> Nesse momento sua senha foi alterada, Por favor utilize essa senha padrão para logar com seu Email. <br/> <br/><b> Email : ${recuperarSenhaDto.email} <b/> <br/> <b> Senha : ${novaSenha} <b/>`;
+
+      await this.mailService.enviarEmailHtml(
+        recuperarSenhaDto.email,
+        'Recuperação de senha',
+        conteudoEmail,
+      );
+    });
   }
 }
