@@ -25,8 +25,7 @@ export class CupomService {
             filtroListarCupomDto.all,
             paginaAtual,
           );
-        else return { dados: await this.listarCupomPorId(usuario.Id) };
-        break;
+        return { dados: await this.listarCupomPorId(usuario.Id) };
       case PerfilEnum.CLIENTE:
         return { dados: await this.listarCupomPorUsuario(usuario.Id) };
       default:
