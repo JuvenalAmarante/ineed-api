@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Query, UseGuards } from '@nestjs/common';
 import { CupomService } from './cupom.service';
 import { AuthGuard } from 'src/shared/guards/auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
@@ -14,10 +14,12 @@ export class CupomController {
   async listar(
     @CurrentUser() usuario: DadosUsuarioLogado,
     @Query() filtroListarCupomDto: FiltroListarCupomDto,
+    @Headers('Page') pagina: string,
   ) {
     const dadosRetorno = await this.cupomService.listar(
       usuario,
       filtroListarCupomDto,
+      +pagina,
     );
 
     return {

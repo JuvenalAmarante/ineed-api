@@ -18,6 +18,8 @@ export class CupomService {
     filtroListarCupomDto: FiltroListarCupomDto,
     paginaAtual = 1,
   ): Promise<{ dados: any; paginas?: number }> {
+    if (isNaN(paginaAtual)) paginaAtual = 1;
+
     switch (usuario.PerfilId) {
       case PerfilEnum.ADMIN:
         if (!filtroListarCupomDto.id)
