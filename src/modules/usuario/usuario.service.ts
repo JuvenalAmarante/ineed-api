@@ -203,6 +203,10 @@ export class UsuarioService {
       },
     });
 
+    listaUsuarios.forEach((item) => {
+      item.senha = null;
+    });
+
     return listaUsuarios;
   }
 }
