@@ -84,14 +84,15 @@ model Cupom {
 }
 
 model CupomAdmin {
-  Id          Int     @id(map: "PK_dbo.CupomAdmin") @default(autoincrement())
-  CupomId     Int
-  Ativo       Boolean
-  UsosMaximos Int
-  Taxa        Int
-  Cupom       Cupom   @relation(fields: [CupomId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.CupomAdmin_dbo.Cupom_CupomId")
+  id          Int     @id(map: "PK_dbo.CupomAdmin") @default(autoincrement()) @map("Id")
+  cupomId     Int     @map("CupomId")
+  ativo       Boolean @map("Ativo")
+  usosMaximos Int     @map("UsosMaximos")
+  taxa        Int     @map("Taxa")
 
-  @@index([CupomId], map: "IX_CupomId")
+  cupom Cupom @relation(fields: [cupomId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.CupomAdmin_dbo.Cupom_CupomId")
+
+  @@index([cupomId], map: "IX_CupomId")
 }
 
 model CupomAdminUsers {

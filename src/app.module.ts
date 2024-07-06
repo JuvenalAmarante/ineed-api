@@ -7,6 +7,8 @@ import { UsuarioModule } from './modules/usuario/usuario.module';
 import { PrismaModule } from './shared/services/prisma/prisma.module';
 import { MailModule } from './shared/services/mail/mail.module';
 import { ConfiguracaoModule } from './modules/configuracao/configuracao.module';
+import { CartaoModule } from './modules/cartao/cartao.module';
+import { CupomModule } from './modules/cupom/cupom.module';
 
 @Module({
   imports: [
@@ -16,6 +18,7 @@ import { ConfiguracaoModule } from './modules/configuracao/configuracao.module';
     UsuarioModule,
     MailModule,
     ConfiguracaoModule,
+    CupomModule,
   ],
   controllers: [AppController],
   providers: [AppService],
