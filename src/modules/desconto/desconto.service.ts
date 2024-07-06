@@ -8,7 +8,7 @@ import { PrismaService } from 'src/shared/services/prisma/prisma.service';
 export class DescontoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listarDesconto(
+  async listar(
     usuario: DadosUsuarioLogado,
     filtroListarDescontoDto: FiltroListarDescontoDto,
   ) {
