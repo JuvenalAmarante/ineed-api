@@ -20,7 +20,7 @@ export class UsuarioService {
   async listarDados(usuario: DadosUsuarioLogado) {
     const dados = await this.prisma.usuario.findFirst({
       where: {
-        id: usuario.Id,
+        id: usuario.id,
       },
     });
 
@@ -178,7 +178,7 @@ export class UsuarioService {
     usuario: DadosUsuarioLogado,
     filtroListarTodosUsuarioDto: FiltroListarTodosUsuarioDto,
   ) {
-    if (![PerfilEnum.ADMIN, PerfilEnum.FORNECEDOR].includes(usuario.PerfilId))
+    if (![PerfilEnum.ADMIN, PerfilEnum.FORNECEDOR].includes(usuario.perfilId))
       throw new UnauthorizedException('O usuário não tem permissão de acesso');
 
     const listaUsuarios = await this.prisma.usuario.findMany({

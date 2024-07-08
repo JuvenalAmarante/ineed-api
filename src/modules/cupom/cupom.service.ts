@@ -20,16 +20,16 @@ export class CupomService {
   ): Promise<{ dados: any; paginas?: number }> {
     if (isNaN(paginaAtual)) paginaAtual = 1;
 
-    switch (usuario.PerfilId) {
+    switch (usuario.perfilId) {
       case PerfilEnum.ADMIN:
         if (!filtroListarCupomDto.id)
           return await this.listarCupomAdmin(
             filtroListarCupomDto.all,
             paginaAtual,
           );
-        return { dados: await this.listarCupomPorId(usuario.Id) };
+        return { dados: await this.listarCupomPorId(usuario.id) };
       case PerfilEnum.CLIENTE:
-        return { dados: await this.listarCupomPorUsuario(usuario.Id) };
+        return { dados: await this.listarCupomPorUsuario(usuario) };
       default:
         throw new UnauthorizedException(
           'Apenas clientes têm acesso aos cupons',
@@ -44,7 +44,7 @@ export class CupomService {
       desconto: cupom.taxa,
       usoMaximo: cupom.usosMaximos,
       utilizado: await this.prisma.desconto.count({
-        where: { CupomId: cupom.cupomId },
+        where: { cupomId: cupom.cupomId },
       }),
       ativo: cupom.ativo,
     };
@@ -91,25 +91,17 @@ export class CupomService {
     );
   }
 
-  private async listarCupomPorUsuario(usuarioId: number) {
-    const usuario = await this.prisma.usuario.findFirst({
-      include: {
-        cupom: true,
-      },
-    });
-
-    if (!usuario) throw new BadRequestException('Usuário não encontrado');
-
+  private async listarCupomPorUsuario(usuario: DadosUsuarioLogado) {
     if (usuario.cupom) return usuario.cupom;
 
     const cupom = await this.gerarCupom();
 
     await this.prisma.usuario.update({
       data: {
-        cupomId: cupom.Id,
+        cupomId: cupom.id,
       },
       where: {
-        id: usuarioId,
+        id: usuario.id,
       },
     });
 
@@ -162,13 +154,13 @@ export class CupomService {
       for (let i = 0; i < 6; i++)
         novoCupom += caracteres[Math.floor(Math.random() * caracteres.length)];
     } while (
-      (await this.prisma.cupom.findFirst({ where: { Codigo: novoCupom } })) !=
+      (await this.prisma.cupom.findFirst({ where: { codigo: novoCupom } })) !=
       null
     );
 
     var cupom = await this.prisma.cupom.create({
       data: {
-        Codigo: novoCupom,
+        codigo: novoCupom,
       },
     });
 

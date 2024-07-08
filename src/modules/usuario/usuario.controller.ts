@@ -50,7 +50,7 @@ export class UsuarioController {
     @Body() atualizarUsuarioDto: AtualizarUsuarioDto,
   ) {
     const data = await this.usuarioService.atualizar(
-      usuario.Id,
+      usuario.id,
       atualizarUsuarioDto,
     );
 
@@ -67,7 +67,7 @@ export class UsuarioController {
     @Body() atualizarAtributoUsuarioDto: AtualizarAtributoUsuarioDto,
   ) {
     const data = await this.usuarioService.atualizar(
-      usuario.Id,
+      usuario.id,
       atualizarAtributoUsuarioDto,
     );
 
@@ -84,7 +84,7 @@ export class UsuarioController {
     @Body() atualizarSenhaUsuarioDto: AtualizarSenhaUsuarioDto,
   ) {
     const data = await this.usuarioService.atualizarSenha(
-      usuario.Id,
+      usuario.id,
       atualizarSenhaUsuarioDto,
     );
 

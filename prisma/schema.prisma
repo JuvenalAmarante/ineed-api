@@ -77,10 +77,11 @@ model CreditCardEfi {
 }
 
 model Cupom {
-  Id         Int          @id(map: "PK_dbo.Cupom") @default(autoincrement())
-  Codigo     String?      @db.NVarChar(Max)
-  CupomAdmin CupomAdmin[]
-  Usuario    Usuario[]
+  id     Int     @id(map: "PK_dbo.Cupom") @default(autoincrement()) @map("Id")
+  codigo String? @map("Codigo") @db.NVarChar(Max)
+
+  cupomAdmin CupomAdmin[]
+  usuario    Usuario[]
 }
 
 model CupomAdmin {
@@ -90,7 +91,7 @@ model CupomAdmin {
   usosMaximos Int     @map("UsosMaximos")
   taxa        Int     @map("Taxa")
 
-  cupom Cupom @relation(fields: [cupomId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.CupomAdmin_dbo.Cupom_CupomId")
+  cupom Cupom @relation(fields: [cupomId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.CupomAdmin_dbo.Cupom_CupomId")
 
   @@index([cupomId], map: "IX_CupomId")
 }
@@ -102,11 +103,11 @@ model CupomAdminUsers {
 }
 
 model Desconto {
-  Id      Int     @id(map: "PK_dbo.Desconto") @default(autoincrement())
-  Taxa    Int
-  Ativado Boolean
-  UserId  Int
-  CupomId Int?
+  id      Int     @id(map: "PK_dbo.Desconto") @default(autoincrement()) @map("Id")
+  taxa    Int     @map("Taxa")
+  ativado Boolean @map("Ativado")
+  userId  Int     @map("UserId")
+  cupomId Int?    @map("CupomId")
 }
 
 model Estado {
@@ -319,7 +320,7 @@ model Usuario {
   orcamentoUsuarioColaborador OrcamentoUsuarioColaborador[]
   requisicao                  Requisicao[]
   solicitacao                 Solicitacao[]
-  cupom                       Cupom?                        @relation(fields: [cupomId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Cupom_CupomId")
+  cupom                       Cupom?                        @relation(fields: [cupomId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Cupom_CupomId")
   tipo                        Tipo                          @relation(fields: [tipoId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Tipo_TipoId")
   visitaUsuarioColaborador    VisitaUsuarioColaborador[]
 

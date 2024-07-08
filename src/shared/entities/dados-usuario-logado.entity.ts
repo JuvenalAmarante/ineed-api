@@ -1,5 +1,9 @@
 export class DadosUsuarioLogado {
-  Id: number;
-  Token: string;
-  PerfilId: number;
+  id: number;
+  token: string;
+  perfilId: number;
+  cupom: {
+    id: number;
+    codigo: string;
+  } | null;
 }

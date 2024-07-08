@@ -1,3 +1,4 @@
+import { Cupom } from './../../../node_modules/.prisma/client/index.d';
 import {
   CanActivate,
   ExecutionContext,
@@ -20,7 +21,11 @@ export class AuthGuard implements CanActivate {
     try {
       const acesso = await this.prisma.acesso.findFirst({
         include: {
-          Usuario: true
+          Usuario: {
+            include: {
+              cupom: true,
+            }
+          }
         },
         where: {
           Token: token,
@@ -30,9 +35,13 @@ export class AuthGuard implements CanActivate {
       if (!acesso) throw new UnauthorizedException('Token inválido');
 
       const dadosUsuario: DadosUsuarioLogado = {
-        Id: acesso.UsuarioId,
-        Token: token,
-        PerfilId: acesso.Usuario.perfilId,
+        id: acesso.UsuarioId,
+        token,
+        perfilId: acesso.Usuario.perfilId,
+        cupom: acesso.Usuario.cupom ? {
+          id: acesso.Usuario.cupom.id,
+          codigo: acesso.Usuario.cupom.codigo,
+        } : null
       };
 
       request['usuario'] = dadosUsuario;
