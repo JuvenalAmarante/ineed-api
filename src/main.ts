@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { useContainer } from 'class-validator';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
+import { transformQueryParamMiddleware } from './shared/middlewares/transform-query-param.middleware';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, {
@@ -18,6 +19,7 @@ async function bootstrap() {
 	app.enableShutdownHooks();
 	app.useGlobalPipes(new ValidationPipe({ transform: true }));
 	app.useGlobalFilters(new HttpExceptionFilter());
+	app.use(transformQueryParamMiddleware)
 
 	useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
