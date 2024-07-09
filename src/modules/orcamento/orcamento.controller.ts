@@ -5,6 +5,7 @@ import {
   Get,
   Headers,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import { AuthGuard } from 'src/shared/guards/auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.entity';
 import { CadastrarOrcamentoDto } from './dto/cadastrar-orcamento.dto';
+import { AtualizarOrcamentoDto } from './dto/atualizar-orcamento.dto';
 
 @Controller('orcamento')
 export class OrcamentoController {
@@ -55,5 +57,19 @@ export class OrcamentoController {
     return {
       orcamento: dados,
     };
+  }
+  
+  @Put()
+  @UseGuards(AuthGuard)
+  async atualizar(
+    @CurrentUser() usuario: DadosUsuarioLogado,
+    @Body() atualizarOrcamentoDto: AtualizarOrcamentoDto,
+  ) {
+    await this.orcamentoService.atualizar(
+      usuario,
+      atualizarOrcamentoDto,
+    );
+
+    return;
   }
 }
