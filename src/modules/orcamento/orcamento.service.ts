@@ -1,7 +1,9 @@
+import { ConfirmarOrcamentoDto } from './dto/confirmar-orcamento.dto';
 import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotImplementedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/shared/services/prisma/prisma.service';
 import { FiltroListarOrcamentoDto } from './dto/filtro-listar-orcamento.dto';
@@ -12,8 +14,9 @@ import { Orcamento } from './entities/orcamento.entity';
 import { CadastrarOrcamentoDto } from './dto/cadastrar-orcamento.dto';
 import { MailService } from 'src/shared/services/mail/mail.service';
 import { Decimal } from '@prisma/client/runtime/library';
-import { SmsService } from 'src/shared/sms/sms.service';
+import { SmsService } from 'src/shared/services/sms/sms.service';
 import { AtualizarOrcamentoDto } from './dto/atualizar-orcamento.dto';
+import { MetodoPagamentoEnum } from 'src/shared/enums/metodo-pagamento.enum';
 
 @Injectable()
 export class OrcamentoService {
@@ -96,21 +99,44 @@ export class OrcamentoService {
     usuario: DadosUsuarioLogado,
     atualizarOrcamentoDto: AtualizarOrcamentoDto,
   ) {
-    const orcamento = await this.validarDadosAtualizar(usuario, atualizarOrcamentoDto);
+    const orcamento = await this.validarDadosAtualizar(
+      usuario,
+      atualizarOrcamentoDto,
+    );
 
     await this.prisma.orcamento.update({
       data: {
         ...orcamento,
         dataEntrega: atualizarOrcamentoDto?.dataEntrega || undefined,
-        maoObra: atualizarOrcamentoDto?.maoObra|| undefined,
-        material: atualizarOrcamentoDto?.material|| undefined,
-        observacao: atualizarOrcamentoDto?.observacao|| undefined,
-        usuarioId: atualizarOrcamentoDto?.usuarioId|| undefined,
-        diarioObra: atualizarOrcamentoDto?.diarioObra|| undefined,
-
+        maoObra: atualizarOrcamentoDto?.maoObra || undefined,
+        material: atualizarOrcamentoDto?.material || undefined,
+        observacao: atualizarOrcamentoDto?.observacao || undefined,
+        usuarioId: atualizarOrcamentoDto?.usuarioId || undefined,
+        diarioObra: atualizarOrcamentoDto?.diarioObra || undefined,
       },
       where: { id: atualizarOrcamentoDto.id },
     });
+  }
+
+  async confirmar(confirmarOrcamentoDto: ConfirmarOrcamentoDto) {
+    await this.validarDadosConfirmar(confirmarOrcamentoDto)
+
+    // TODO: Adicionar pagamento
+    const transacao = {id: 1}
+
+    const orcamento = await this.prisma.orcamento.update({
+      include: {
+        taxasExtras: true,
+      },
+      data: {
+        transacaoId: transacao.id
+      },
+      where: {
+        id: confirmarOrcamentoDto.id
+      }
+    })
+
+    return orcamento
   }
 
   private async mapear(orcamento: Orcamento) {
@@ -306,6 +332,30 @@ export class OrcamentoService {
     if (usuario != null && usuario.perfilId == PerfilEnum.CLIENTE)
       throw new ForbiddenException('Usuário sem autorização');
 
-    return orcamento
+    return orcamento;
+  }
+
+  private async validarDadosConfirmar(
+    confirmarOrcamentoDto: ConfirmarOrcamentoDto,
+  ) {
+    const orcamento = await this.prisma.orcamento.findUnique({
+      where: {
+        id: confirmarOrcamentoDto.id,
+      },
+    });
+
+    if (!orcamento)
+      throw new BadRequestException('Orçamento não encontrado');
+
+    if (confirmarOrcamentoDto.metodoPagamento == MetodoPagamentoEnum.BOLETO) {
+      if (Decimal.sum(orcamento.maoObra, orcamento.material) < new Decimal(5.0))
+        throw new BadRequestException(
+          'Pagamento via boleto possuem valor mínimo de R$ 5.00',
+        );
+
+      return;
+    } else {
+      throw new NotImplementedException('Não implementado');
+    }
   }
 }

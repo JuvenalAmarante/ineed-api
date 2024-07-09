@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Headers,
+  Patch,
   Post,
   Put,
   Query,
@@ -15,6 +16,7 @@ import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.entity';
 import { CadastrarOrcamentoDto } from './dto/cadastrar-orcamento.dto';
 import { AtualizarOrcamentoDto } from './dto/atualizar-orcamento.dto';
+import { ConfirmarOrcamentoDto } from './dto/confirmar-orcamento.dto';
 
 @Controller('orcamento')
 export class OrcamentoController {
@@ -58,18 +60,26 @@ export class OrcamentoController {
       orcamento: dados,
     };
   }
-  
+
   @Put()
   @UseGuards(AuthGuard)
   async atualizar(
     @CurrentUser() usuario: DadosUsuarioLogado,
     @Body() atualizarOrcamentoDto: AtualizarOrcamentoDto,
   ) {
-    await this.orcamentoService.atualizar(
-      usuario,
-      atualizarOrcamentoDto,
-    );
+    await this.orcamentoService.atualizar(usuario, atualizarOrcamentoDto);
 
     return;
+  }
+
+  @Patch()
+  @UseGuards(AuthGuard)
+  async confirmar(
+    @CurrentUser() usuario: DadosUsuarioLogado,
+    @Body() confirmarOrcamentoDto: ConfirmarOrcamentoDto,
+  ) {
+    return {
+      orcamento: await this.orcamentoService.confirmar(confirmarOrcamentoDto),
+    };
   }
 }
