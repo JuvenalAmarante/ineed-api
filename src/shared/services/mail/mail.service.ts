@@ -7,26 +7,30 @@ export class MailService {
 
   async enviarEmailHtml(destinatario: string, assunto: string, html: string) {
     try {
-      await this.mailerService.sendMail({
-        to: destinatario,
-        subject: assunto,
-        html,
-      });
+      // await this.mailerService.sendMail({
+      //   to: destinatario,
+      //   subject: assunto,
+      //   html,
+      // });
+
+      console.log("Envio de email não implementado")
     } catch (err) {
-      console.log(err)
+      console.error(err)
       throw new InternalServerErrorException('Ocorreu um erro ao enviar o email');
     }
   }
 
   async enviarEmailTexto(destinatario: string, assunto: string, texto: string) {
     try {
-      await this.mailerService.sendMail({
-        to: [destinatario],
-        subject: assunto,
-        text: texto,
-      });
+      // await this.mailerService.sendMail({
+      //   to: [destinatario],
+      //   subject: assunto,
+      //   text: texto,
+      // });
+
+      console.log("Envio de email não implementado")
     } catch (err) {
-      console.log(err)
+      console.error(err)
       throw new InternalServerErrorException('Ocorreu um erro ao enviar o email');
     }
   }

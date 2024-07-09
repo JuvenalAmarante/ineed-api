@@ -36,6 +36,8 @@ export class AuthGuard implements CanActivate {
 
       const dadosUsuario: DadosUsuarioLogado = {
         id: acesso.UsuarioId,
+        email: acesso.Usuario.email,
+        telefone: acesso.Usuario.telefone,
         token,
         perfilId: acesso.Usuario.perfilId,
         cupom: acesso.Usuario.cupom ? {

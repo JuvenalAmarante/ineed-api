@@ -1,9 +1,18 @@
 import { FiltroListarOrcamentoDto } from './dto/filtro-listar-orcamento.dto';
-import { Controller, Get, Headers, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { OrcamentoService } from './orcamento.service';
 import { AuthGuard } from 'src/shared/guards/auth.guard';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.entity';
+import { CadastrarOrcamentoDto } from './dto/cadastrar-orcamento.dto';
 
 @Controller('orcamento')
 export class OrcamentoController {
@@ -26,6 +35,22 @@ export class OrcamentoController {
       return {
         listaorcamento: dados,
       };
+
+    return {
+      orcamento: dados,
+    };
+  }
+
+  @Post()
+  @UseGuards(AuthGuard)
+  async cadastrar(
+    @CurrentUser() usuario: DadosUsuarioLogado,
+    @Body() cadastrarOrcamentoDto: CadastrarOrcamentoDto,
+  ) {
+    const dados = await this.orcamentoService.cadastrar(
+      usuario,
+      cadastrarOrcamentoDto,
+    );
 
     return {
       orcamento: dados,

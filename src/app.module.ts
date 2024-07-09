@@ -10,6 +10,7 @@ import { ConfiguracaoModule } from './modules/configuracao/configuracao.module';
 import { CupomModule } from './modules/cupom/cupom.module';
 import { DescontoModule } from './modules/desconto/desconto.module';
 import { OrcamentoModule } from './modules/orcamento/orcamento.module';
+import { SmsModule } from './shared/sms/sms.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { OrcamentoModule } from './modules/orcamento/orcamento.module';
     CupomModule,
     DescontoModule,
     OrcamentoModule,
+    SmsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
