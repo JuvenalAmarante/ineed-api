@@ -300,7 +300,7 @@ export class OrcamentoService {
       },
     });
 
-    return;
+    return avaliacao;
   }
 
   private async mapear(orcamento: Orcamento) {
