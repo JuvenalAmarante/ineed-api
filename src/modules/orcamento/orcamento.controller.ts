@@ -18,6 +18,7 @@ import { CadastrarOrcamentoDto } from './dto/cadastrar-orcamento.dto';
 import { AtualizarOrcamentoDto } from './dto/atualizar-orcamento.dto';
 import { ConfirmarOrcamentoDto } from './dto/confirmar-orcamento.dto';
 import { FinalizarOrcamentoDto } from './dto/finalizar-orcamento.dto';
+import { AvaliarOrcamentoDto } from './dto/avaliar-orcamento.dto';
 
 @Controller('orcamento')
 export class OrcamentoController {
@@ -98,6 +99,19 @@ export class OrcamentoController {
         finalizarOrcamentoDto,
       ),
       message: 'Alteração salva com sucesso',
+    };
+  }
+
+  @Post('avaliacao')
+  @UseGuards(AuthGuard)
+  async avaliar(
+    @Query('id') id: string,
+    @CurrentUser() usuario: DadosUsuarioLogado,
+    @Body() avaliarOrcamentoDto: AvaliarOrcamentoDto,
+  ) {
+    return {
+      message: 'Avaliação concluída',
+      avaliar: await this.orcamentoService.avaliar(+id, avaliarOrcamentoDto),
     };
   }
 }

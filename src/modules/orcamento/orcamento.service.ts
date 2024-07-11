@@ -19,6 +19,7 @@ import { AtualizarOrcamentoDto } from './dto/atualizar-orcamento.dto';
 import { MetodoPagamentoEnum } from 'src/shared/enums/metodo-pagamento.enum';
 import { PushNotificationService } from 'src/shared/services/push-notification/push-notification.service';
 import { TipoNotificacao } from './enums/tipo-notificacao.enum';
+import { AvaliarOrcamentoDto } from './dto/avaliar-orcamento.dto';
 
 @Injectable()
 export class OrcamentoService {
@@ -280,6 +281,28 @@ export class OrcamentoService {
     return orcamento;
   }
 
+  async avaliar(id: number, avaliarOrcamentoDto: AvaliarOrcamentoDto) {
+    if (isNaN(id)) throw new BadRequestException('Orçamento inválido');
+
+    const avaliacao = await this.prisma.avaliacao.create({
+      data: {
+        nota: avaliarOrcamentoDto.nota,
+        observacao: avaliarOrcamentoDto.observacao || undefined,
+      },
+    });
+
+    await this.prisma.orcamento.update({
+      data: {
+        avaliacaoId: avaliacao.id,
+      },
+      where: {
+        id,
+      },
+    });
+
+    return;
+  }
+
   private async mapear(orcamento: Orcamento) {
     return {
       id: orcamento.id,
@@ -475,13 +498,15 @@ export class OrcamentoService {
         break;
     }
 
-    for (const valor in valores) {
-      mensagem += `<br/>${valor}<br/>`;
+    if (assunto) {
+      for (const valor in valores) {
+        mensagem += `<br/>${valor}<br/>`;
+      }
+
+      mensagem += `<br/>Abraços da equipe FixIt.<br/></div></div></div><div style=\"color: #787878; text-align: center;\"><p>Não responda este e-mail, e-mail automático.</p><p>Aplicativo disponível na <a href=\"https://play.google.com/store/apps/details?id=br.com.prolins.fixitToGo\">Google Play</a> e na <a href=\"https://itunes.apple.com/br/app/fixit/id1373851231?mt=8\">App Store</a></p><p>Em caso de qualquer dúvida, fique à vontade<br/>para enviar um e-mail para <a href=\"mailto:fixit@fixit-togo.com.br\">fixit@fixit-togo.com.br</a></p></div>`;
+
+      await this.mailService.enviarEmailHtml(email, assunto, mensagem);
     }
-
-    mensagem += `<br/>Abraços da equipe FixIt.<br/></div></div></div><div style=\"color: #787878; text-align: center;\"><p>Não responda este e-mail, e-mail automático.</p><p>Aplicativo disponível na <a href=\"https://play.google.com/store/apps/details?id=br.com.prolins.fixitToGo\">Google Play</a> e na <a href=\"https://itunes.apple.com/br/app/fixit/id1373851231?mt=8\">App Store</a></p><p>Em caso de qualquer dúvida, fique à vontade<br/>para enviar um e-mail para <a href=\"mailto:fixit@fixit-togo.com.br\">fixit@fixit-togo.com.br</a></p></div>`;
-
-    this.mailService.enviarEmailHtml(email, assunto, mensagem);
   }
 
   private async enviarSMS(telefone: string, tipo: TipoNotificacao) {
@@ -517,12 +542,13 @@ export class OrcamentoService {
         break;
     }
 
-    await this.pushNotificationService.enviarNotificacaoPush(
-      tokens,
-      titulo,
-      mensagem,
-      data,
-    );
+    if (titulo)
+      await this.pushNotificationService.enviarNotificacaoPush(
+        tokens,
+        titulo,
+        mensagem,
+        data,
+      );
   }
 
   private async validarDadosAtualizar(
