@@ -17,6 +17,7 @@ import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.ent
 import { CadastrarOrcamentoDto } from './dto/cadastrar-orcamento.dto';
 import { AtualizarOrcamentoDto } from './dto/atualizar-orcamento.dto';
 import { ConfirmarOrcamentoDto } from './dto/confirmar-orcamento.dto';
+import { FinalizarOrcamentoDto } from './dto/finalizar-orcamento.dto';
 
 @Controller('orcamento')
 export class OrcamentoController {
@@ -72,7 +73,7 @@ export class OrcamentoController {
     return;
   }
 
-  @Patch()
+  @Patch('confirmar')
   @UseGuards(AuthGuard)
   async confirmar(
     @CurrentUser() usuario: DadosUsuarioLogado,
@@ -80,6 +81,23 @@ export class OrcamentoController {
   ) {
     return {
       orcamento: await this.orcamentoService.confirmar(confirmarOrcamentoDto),
+    };
+  }
+
+  @Patch()
+  @UseGuards(AuthGuard)
+  async finalizar(
+    @Query('id') id: string,
+    @CurrentUser() usuario: DadosUsuarioLogado,
+    @Body() finalizarOrcamentoDto: FinalizarOrcamentoDto,
+  ) {
+    return {
+      orcamento: await this.orcamentoService.finalizar(
+        +id,
+        usuario.id,
+        finalizarOrcamentoDto,
+      ),
+      message: 'Alteração salva com sucesso',
     };
   }
 }

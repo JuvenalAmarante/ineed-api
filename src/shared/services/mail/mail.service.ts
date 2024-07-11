@@ -1,5 +1,5 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class MailService {
@@ -13,10 +13,13 @@ export class MailService {
       //   html,
       // });
 
-      console.log("Envio de email não implementado")
+      console.log('Envio de email não implementado', {
+        destinatario,
+        assunto,
+        html,
+      });
     } catch (err) {
-      console.error(err)
-      throw new InternalServerErrorException('Ocorreu um erro ao enviar o email');
+      console.error(err);
     }
   }
 
@@ -28,10 +31,13 @@ export class MailService {
       //   text: texto,
       // });
 
-      console.log("Envio de email não implementado")
+      console.log('Envio de email não implementado', {
+        destinatario,
+        assunto,
+        texto,
+      });
     } catch (err) {
-      console.error(err)
-      throw new InternalServerErrorException('Ocorreu um erro ao enviar o email');
+      console.error(err);
     }
   }
 }

@@ -1,5 +1,13 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsDate, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDate,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { BooleanTransformHelper } from 'src/shared/helpers/boolean.helper';
 
 export class CadastrarOrcamentoDto {
@@ -36,18 +44,24 @@ export class CadastrarOrcamentoDto {
   @IsOptional()
   observacao?: string;
 
-  @IsNumber({}, {
-    message: 'O campo mao de obra é inválido',
-  })
+  @IsNumber(
+    {},
+    {
+      message: 'O campo mao de obra é inválido',
+    },
+  )
   @IsNotEmpty({
     message: 'O campo mao de obra é obrigatório',
   })
   @Type(() => Number)
   maoObra: number;
 
-  @IsNumber({}, {
-    message: 'O campo material é inválido',
-  })
+  @IsNumber(
+    {},
+    {
+      message: 'O campo material é inválido',
+    },
+  )
   @IsNotEmpty({
     message: 'O campo material é obrigatório',
   })
@@ -59,7 +73,7 @@ export class CadastrarOrcamentoDto {
   })
   @IsOptional()
   @Transform(BooleanTransformHelper)
-  concluido: boolean;
+  concluido?: boolean;
 
   @IsInt({
     message: 'O campo usuário colaborador é inválido',
@@ -69,11 +83,11 @@ export class CadastrarOrcamentoDto {
   })
   @Type(() => Number)
   usuarioColaboradorId?: number;
-  
+
   @IsBoolean({
     message: 'O campo pago é inválido',
   })
   @IsOptional()
   @Transform(BooleanTransformHelper)
-  pago: boolean;
+  pago?: boolean;
 }
