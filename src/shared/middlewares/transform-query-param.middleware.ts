@@ -1,4 +1,3 @@
-import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
 export function transformQueryParamMiddleware(
@@ -8,11 +7,17 @@ export function transformQueryParamMiddleware(
 ) {
   const newQueryParam = {};
 
-  Object.keys(req.query).forEach(
-    (key) => (newQueryParam[key.toLowerCase()] = req.query[key]),
-  );
+  if (!!req.query) {
+    Object.keys(req.query).forEach((key) => {
+      const keySplited = key.split('');
 
-  req.query = newQueryParam;
+      keySplited[0] = keySplited[0].toLowerCase();
+
+      newQueryParam[keySplited.join()] = req.query[key];
+    });
+
+    req.query = newQueryParam;
+  }
 
   next();
 }

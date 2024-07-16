@@ -6,6 +6,6 @@ export class ConfiguracaoService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listarConfiguracao() {
-    return this.prisma.configuracao.findFirst()
+    return this.prisma.configuracao.findFirst();
   }
 }

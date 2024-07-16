@@ -1,4 +1,3 @@
-import { Cupom } from './../../../node_modules/.prisma/client/index.d';
 import {
   CanActivate,
   ExecutionContext,
@@ -24,8 +23,8 @@ export class AuthGuard implements CanActivate {
           Usuario: {
             include: {
               cupom: true,
-            }
-          }
+            },
+          },
         },
         where: {
           Token: token,
@@ -40,10 +39,12 @@ export class AuthGuard implements CanActivate {
         telefone: acesso.Usuario.telefone,
         token,
         perfilId: acesso.Usuario.perfilId,
-        cupom: acesso.Usuario.cupom ? {
-          id: acesso.Usuario.cupom.id,
-          codigo: acesso.Usuario.cupom.codigo,
-        } : null
+        cupom: acesso.Usuario.cupom
+          ? {
+              id: acesso.Usuario.cupom.id,
+              codigo: acesso.Usuario.cupom.codigo,
+            }
+          : null,
       };
 
       request['usuario'] = dadosUsuario;

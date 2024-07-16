@@ -10,7 +10,7 @@ export class LoginDto {
   @IsNotEmpty({
     message: 'O campo email é obrigatório.',
   })
-  Email: string;
+  email: string;
 
   @IsString({
     message: 'A senha informada é inválida.',
@@ -18,5 +18,5 @@ export class LoginDto {
   @IsNotEmpty({
     message: 'O campo senha é obrigatório.',
   })
-  Senha: string;
+  senha: string;
 }

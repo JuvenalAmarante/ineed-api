@@ -14,7 +14,7 @@ export class AtualizarOrcamentoDto extends PartialType(CadastrarOrcamentoDto) {
   id: number;
 
   @IsString({
-    message: 'O campo diario da obra é inválido'
+    message: 'O campo diario da obra é inválido',
   })
   @IsOptional()
   diarioObra?: string;

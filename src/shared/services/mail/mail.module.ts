@@ -15,7 +15,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           from: config.get('MAIL_USER'),
         },
       }),
-      inject: [ConfigService]
+      inject: [ConfigService],
     }),
   ],
   providers: [MailService],

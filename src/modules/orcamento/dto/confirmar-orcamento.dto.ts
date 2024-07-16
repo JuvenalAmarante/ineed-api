@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsString } from 'class-validator';
 import { MetodoPagamentoEnum } from 'src/shared/enums/metodo-pagamento.enum';
 
 export class ConfirmarOrcamentoDto {
@@ -22,7 +22,7 @@ export class ConfirmarOrcamentoDto {
   metodoPagamento: number;
 
   @IsString({
-    message: 'O campo hash é inválido'
+    message: 'O campo hash é inválido',
   })
   @IsNotEmpty({
     message: 'O campo hash é obrigatório',

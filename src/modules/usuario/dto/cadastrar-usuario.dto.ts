@@ -122,9 +122,9 @@ export class CadastrarUsuarioDto {
   @Type(() => Date)
   @IsOptional()
   DataAniversario?: Date;
-  
+
   @IsBoolean({
-    message: 'O campo conta rede social é inválido'
+    message: 'O campo conta rede social é inválido',
   })
   @IsOptional()
   ContaRedeSocial?: boolean;

@@ -31,11 +31,8 @@ export class DescontoController {
     @Body() ativarDescontoDto: AtivarDescontoDto,
   ) {
     return {
-      desconto: await this.descontoService.ativar(
-        usuario,
-        ativarDescontoDto,
-      ),
-      message: 'O desconto foi ativado com sucesso!'
+      desconto: await this.descontoService.ativar(usuario, ativarDescontoDto),
+      message: 'O desconto foi ativado com sucesso!',
     };
   }
 }

@@ -1,11 +1,8 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
   Patch,
-  Param,
-  Delete,
   Headers,
   UseGuards,
 } from '@nestjs/common';
@@ -40,7 +37,7 @@ export class AuthController {
     await this.authService.recuperarSenha(recuperarSenhaDto);
 
     return {
-      message: ''
-    }
+      message: '',
+    };
   }
 }

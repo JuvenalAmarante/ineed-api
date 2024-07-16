@@ -6,6 +6,6 @@ import { MailModule } from 'src/shared/services/mail/mail.module';
 @Module({
   controllers: [AuthController],
   providers: [AuthService],
-  imports:[MailModule]
+  imports: [MailModule],
 })
 export class AuthModule {}
