@@ -32,7 +32,7 @@ export class UsuarioService {
   async cadastrar(cadastrarUsuarioDto: CadastrarUsuarioDto) {
     const usuario = await this.prisma.usuario.findFirst({
       where: {
-        email: cadastrarUsuarioDto.Email,
+        email: cadastrarUsuarioDto.email,
       },
     });
 
@@ -40,28 +40,28 @@ export class UsuarioService {
 
     return this.prisma.usuario.create({
       data: {
-        email: cadastrarUsuarioDto.Email,
-        senha: encriptar(cadastrarUsuarioDto.Senha),
-        nome: cadastrarUsuarioDto.Nome,
-        perfilId: cadastrarUsuarioDto.PerfilId,
-        tipoId: cadastrarUsuarioDto.TipoId,
-        endereco: cadastrarUsuarioDto.Endereco || undefined,
-        rg: cadastrarUsuarioDto.Rg || undefined,
-        cidade: cadastrarUsuarioDto.Cidade || undefined,
-        uf: cadastrarUsuarioDto.Uf || undefined,
-        cpfCnpj: cadastrarUsuarioDto.CpfCnpj || undefined,
-        numero: cadastrarUsuarioDto.Numero || undefined,
-        imagemUrl: cadastrarUsuarioDto.ImagemUrl || undefined,
-        complemento: cadastrarUsuarioDto.Complemento || undefined,
-        cep: cadastrarUsuarioDto.Cep || undefined,
-        telefone: cadastrarUsuarioDto.Telefone || undefined,
-        dataAniversario: cadastrarUsuarioDto.DataAniversario || undefined,
-        idTipoRedeSocial: cadastrarUsuarioDto.IdTipoRedeSocial || 0,
-        idRedeSocial: cadastrarUsuarioDto.IdRedeSocial || undefined,
-        cupomId: cadastrarUsuarioDto.CupomId || undefined,
+        email: cadastrarUsuarioDto.email,
+        senha: encriptar(cadastrarUsuarioDto.senha),
+        nome: cadastrarUsuarioDto.nome,
+        perfilId: cadastrarUsuarioDto.perfilId,
+        tipoId: cadastrarUsuarioDto.tipoId,
+        endereco: cadastrarUsuarioDto.endereco || undefined,
+        rg: cadastrarUsuarioDto.rg || undefined,
+        cidade: cadastrarUsuarioDto.cidade || undefined,
+        uf: cadastrarUsuarioDto.uf || undefined,
+        cpfCnpj: cadastrarUsuarioDto.cpfCnpj || undefined,
+        numero: cadastrarUsuarioDto.numero || undefined,
+        imagemUrl: cadastrarUsuarioDto.imagemUrl || undefined,
+        complemento: cadastrarUsuarioDto.complemento || undefined,
+        cep: cadastrarUsuarioDto.cep || undefined,
+        telefone: cadastrarUsuarioDto.telefone || undefined,
+        dataAniversario: cadastrarUsuarioDto.dataAniversario || undefined,
+        idTipoRedeSocial: cadastrarUsuarioDto.idTipoRedeSocial || 0,
+        idRedeSocial: cadastrarUsuarioDto.idRedeSocial || undefined,
+        cupomId: cadastrarUsuarioDto.cupomId || undefined,
         contaRedeSocial:
-          cadastrarUsuarioDto.ContaRedeSocial != null
-            ? cadastrarUsuarioDto.ContaRedeSocial
+          cadastrarUsuarioDto.contaRedeSocial != null
+            ? cadastrarUsuarioDto.contaRedeSocial
             : false,
         criadoEm: new Date(),
         inativo: false,
@@ -81,10 +81,10 @@ export class UsuarioService {
 
     if (!usuario) throw new BadRequestException('Usuário não cadastrado');
 
-    if (atualizarUsuarioDto.Email) {
+    if (atualizarUsuarioDto.email) {
       const emailExiste = await this.prisma.usuario.findFirst({
         where: {
-          email: atualizarUsuarioDto.Email,
+          email: atualizarUsuarioDto.email,
           id: {
             not: id,
           },
@@ -94,10 +94,10 @@ export class UsuarioService {
       if (emailExiste) throw new BadRequestException('Email já cadastrado');
     }
 
-    if (atualizarUsuarioDto.CpfCnpj) {
+    if (atualizarUsuarioDto.cpfCnpj) {
       const cpfCnpjExiste = await this.prisma.usuario.findFirst({
         where: {
-          cpfCnpj: atualizarUsuarioDto.CpfCnpj,
+          cpfCnpj: atualizarUsuarioDto.cpfCnpj,
           id: {
             not: id,
           },
@@ -109,31 +109,32 @@ export class UsuarioService {
     }
 
     return this.prisma.usuario.update({
+      include: { cupom: true, tipo: true },
       data: {
-        email: atualizarUsuarioDto.Email || undefined,
-        senha: atualizarUsuarioDto.Senha
-          ? encriptar(atualizarUsuarioDto.Senha)
+        email: atualizarUsuarioDto.email || undefined,
+        senha: atualizarUsuarioDto.senha
+          ? encriptar(atualizarUsuarioDto.senha)
           : undefined,
-        nome: atualizarUsuarioDto.Nome || undefined,
-        perfilId: atualizarUsuarioDto.PerfilId || undefined,
-        tipoId: atualizarUsuarioDto.TipoId || undefined,
-        endereco: atualizarUsuarioDto.Endereco || undefined,
-        rg: atualizarUsuarioDto.Rg || undefined,
-        cidade: atualizarUsuarioDto.Cidade || undefined,
-        uf: atualizarUsuarioDto.Uf || undefined,
-        cpfCnpj: atualizarUsuarioDto.CpfCnpj || undefined,
-        numero: atualizarUsuarioDto.Numero || undefined,
-        imagemUrl: atualizarUsuarioDto.ImagemUrl || undefined,
-        complemento: atualizarUsuarioDto.Complemento || undefined,
-        cep: atualizarUsuarioDto.Cep || undefined,
-        telefone: atualizarUsuarioDto.Telefone || undefined,
-        dataAniversario: atualizarUsuarioDto.DataAniversario || undefined,
-        idTipoRedeSocial: atualizarUsuarioDto.IdTipoRedeSocial || undefined,
-        idRedeSocial: atualizarUsuarioDto.IdRedeSocial || undefined,
-        cupomId: atualizarUsuarioDto.CupomId || undefined,
+        nome: atualizarUsuarioDto.nome || undefined,
+        perfilId: atualizarUsuarioDto.perfilId || undefined,
+        tipoId: atualizarUsuarioDto.tipoId || undefined,
+        endereco: atualizarUsuarioDto.endereco || undefined,
+        rg: atualizarUsuarioDto.rg || undefined,
+        cidade: atualizarUsuarioDto.cidade || undefined,
+        uf: atualizarUsuarioDto.uf || undefined,
+        cpfCnpj: atualizarUsuarioDto.cpfCnpj || undefined,
+        numero: atualizarUsuarioDto.numero || undefined,
+        imagemUrl: atualizarUsuarioDto.imagemUrl || undefined,
+        complemento: atualizarUsuarioDto.complemento || undefined,
+        cep: atualizarUsuarioDto.cep || undefined,
+        telefone: atualizarUsuarioDto.telefone || undefined,
+        dataAniversario: atualizarUsuarioDto.dataAniversario || undefined,
+        idTipoRedeSocial: atualizarUsuarioDto.idTipoRedeSocial || undefined,
+        idRedeSocial: atualizarUsuarioDto.idRedeSocial || undefined,
+        cupomId: atualizarUsuarioDto.cupomId || undefined,
         contaRedeSocial:
-          atualizarUsuarioDto.ContaRedeSocial != null
-            ? atualizarUsuarioDto.ContaRedeSocial
+          atualizarUsuarioDto.contaRedeSocial != null
+            ? atualizarUsuarioDto.contaRedeSocial
             : undefined,
       },
       where: {

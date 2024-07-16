@@ -4,7 +4,6 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { map } from 'rxjs';
 
 @Injectable()
 export class TransformBodyParamInterceptor implements NestInterceptor {
@@ -25,6 +24,6 @@ export class TransformBodyParamInterceptor implements NestInterceptor {
       req.body = newBodyParam;
     }
 
-    return next.handle().pipe(map((data) => ({ data })));
+    return next.handle();
   }
 }

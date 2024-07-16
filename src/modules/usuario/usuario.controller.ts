@@ -3,8 +3,6 @@ import {
   Get,
   Body,
   Patch,
-  Param,
-  Delete,
   UseGuards,
   Post,
   Put,
@@ -37,8 +35,8 @@ export class UsuarioController {
     const data = await this.usuarioService.cadastrar(cadastrarUsuarioDto);
 
     return {
-      Nome: data.nome,
-      Usuario: data,
+      nome: data.nome,
+      usuario: data,
       message: 'Usuário cadastrado com sucesso',
     };
   }
@@ -55,7 +53,7 @@ export class UsuarioController {
     );
 
     return {
-      Usuario: data,
+      usuario: data,
       message: 'Usuário atualizado com sucesso',
     };
   }
@@ -72,7 +70,7 @@ export class UsuarioController {
     );
 
     return {
-      Usuario: data,
+      usuario: data,
       message: 'Usuário atualizado com sucesso',
     };
   }
@@ -89,7 +87,7 @@ export class UsuarioController {
     );
 
     return {
-      Usuario: data,
+      usuario: data,
       message: 'Senha atualizada com sucesso',
     };
   }

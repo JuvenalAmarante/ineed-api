@@ -18,7 +18,7 @@ export class CadastrarUsuarioDto {
   @IsNotEmpty({
     message: 'O campo nome é obrigatório.',
   })
-  Nome: string;
+  nome: string;
 
   @IsEmail(
     {},
@@ -29,7 +29,7 @@ export class CadastrarUsuarioDto {
   @IsNotEmpty({
     message: 'O campo email é obrigatório.',
   })
-  Email: string;
+  email: string;
 
   @IsString({
     message: 'A senha informada é inválida.',
@@ -37,17 +37,17 @@ export class CadastrarUsuarioDto {
   @IsNotEmpty({
     message: 'O campo senha é obrigatório.',
   })
-  Senha: string;
+  senha: string;
 
   @IsString({ message: 'O campo RG é inválido.' })
   @IsOptional()
-  Rg?: string;
+  rg?: string;
 
   @IsString({ message: 'O campo CPF/CNPJ é inválido.' })
   @MinLength(14, { message: 'O campo CPF/CNPJ é inválido.' })
   @MaxLength(16, { message: 'O campo CPF/CNPJ é inválido.' })
   @IsOptional()
-  CpfCnpj?: string;
+  cpfCnpj?: string;
 
   @IsNotEmpty({
     message: 'O campo perfil é obrigatório.',
@@ -56,7 +56,7 @@ export class CadastrarUsuarioDto {
     message: 'O campo perfil é inválido.',
   })
   @Type(() => Number)
-  PerfilId: number;
+  perfilId: number;
 
   @IsNotEmpty({
     message: 'O campo tipo é obrigatório.',
@@ -65,87 +65,87 @@ export class CadastrarUsuarioDto {
     message: 'O campo tipo é inválido.',
   })
   @Type(() => Number)
-  TipoId: number;
+  tipoId: number;
 
   @IsString({
     message: 'O campo endereço é inválido.',
   })
   @IsOptional()
-  Endereco?: string;
+  endereco?: string;
 
   @IsInt({
     message: 'O campo tipo número é inválido.',
   })
   @Type(() => Number)
   @IsOptional()
-  Numero?: number;
+  numero?: number;
 
   @IsString({
     message: 'O campo endereço é inválido.',
   })
   @IsOptional()
-  Cep?: string;
+  cep?: string;
 
   @IsString({
     message: 'O campo endereço é inválido.',
   })
   @IsOptional()
-  Telefone?: string;
+  telefone?: string;
 
   @IsString({
     message: 'O campo endereço é inválido.',
   })
   @IsOptional()
-  Cidade?: string;
+  cidade?: string;
 
   @IsString({
     message: 'O campo endereço é inválido.',
   })
   @IsOptional()
-  ImagemUrl?: string;
+  imagemUrl?: string;
 
   @IsString({
     message: 'O campo endereço é inválido.',
   })
   @IsOptional()
-  Uf?: string;
+  uf?: string;
 
   @IsString({
     message: 'O campo complemento é inválido.',
   })
   @IsOptional()
-  Complemento?: string;
+  complemento?: string;
 
   @IsDate({
     message: 'O campo data de aniversário é inválido',
   })
   @Type(() => Date)
   @IsOptional()
-  DataAniversario?: Date;
+  dataAniversario?: Date;
 
   @IsBoolean({
     message: 'O campo conta rede social é inválido',
   })
   @IsOptional()
-  ContaRedeSocial?: boolean;
+  contaRedeSocial?: boolean;
 
   @IsInt({
     message: 'O campo tipo rede social é inválido.',
   })
   @Type(() => Number)
   @IsOptional()
-  IdTipoRedeSocial?: number;
+  idTipoRedeSocial?: number;
 
   @IsString({
     message: 'O campo rede social é inválido.',
   })
   @IsOptional()
-  IdRedeSocial?: string;
+  idRedeSocial?: string;
 
   @IsInt({
     message: 'O campo cupom é inválido.',
   })
   @Type(() => Number)
   @IsOptional()
-  CupomId?: number;
+  cupomId?: number;
 }
