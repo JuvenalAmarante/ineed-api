@@ -12,6 +12,7 @@ import { DescontoModule } from './modules/desconto/desconto.module';
 import { OrcamentoModule } from './modules/orcamento/orcamento.module';
 import { SmsModule } from './shared/services/sms/sms.module';
 import { PushNotificationModule } from './shared/services/push-notification/push-notification.module';
+import { SolicitacaoModule } from './modules/solicitacao/solicitacao.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PushNotificationModule } from './shared/services/push-notification/push
     OrcamentoModule,
     SmsModule,
     PushNotificationModule,
+    SolicitacaoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

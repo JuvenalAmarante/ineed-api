@@ -13,7 +13,7 @@ export function transformQueryParamMiddleware(
 
       keySplited[0] = keySplited[0].toLowerCase();
 
-      newQueryParam[keySplited.join()] = req.query[key];
+      newQueryParam[keySplited.join('')] = req.query[key];
     });
 
     req.query = newQueryParam;

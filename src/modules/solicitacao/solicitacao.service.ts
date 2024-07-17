@@ -1,0 +1,424 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
+import { PrismaService } from 'src/shared/services/prisma/prisma.service';
+import { FiltroListarSolicitacaoDto } from './dto/filtro-listar-solicitacao.dto';
+import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.entity';
+import { PerfilEnum } from 'src/shared/enums/perfil.enum';
+import { Prisma } from '@prisma/client';
+
+@Injectable()
+export class SolicitacaoService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async listar(
+    usuario: DadosUsuarioLogado,
+    filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
+  ) {
+    if (filtroListarSolicitacaoDto.id) {
+      const solicitacao = await this.listarPorId(filtroListarSolicitacaoDto.id);
+
+      return this.listarDados(solicitacao);
+    }
+
+    const solicitacoes = await this.listarPorFiltros(
+      usuario,
+      filtroListarSolicitacaoDto,
+    );
+
+    await Promise.all(
+      solicitacoes.map(async (solicitacao) => ({
+        ...(await this.listarDados(solicitacao)).solicitacao,
+      })),
+    );
+
+    return solicitacoes;
+  }
+
+  async deletar(id: number, usuario: DadosUsuarioLogado) {
+    const solicitacao = await this.prisma.solicitacao.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!solicitacao) throw new ForbiddenException('Solicitação inválida.');
+
+    if (!solicitacao.ativo)
+      throw new ForbiddenException(
+        'A ação que você está tentando executar já foi executada',
+      );
+
+    if (
+      usuario.perfilId == PerfilEnum.CLIENTE &&
+      solicitacao.usuarioId != usuario.id
+    )
+      throw new ForbiddenException('A solicitação não pertence a esse usuário');
+
+    const orcamento = await this.prisma.orcamento.findFirst({
+      where: {
+        solicitacaoId: solicitacao.id,
+      },
+    });
+
+    const taxaExtra = await this.prisma.taxaExtra.findFirst({
+      where: {
+        orcamentoId: orcamento.id,
+      },
+    });
+
+    if (
+      (orcamento != null && orcamento.pago) ||
+      (taxaExtra != null && taxaExtra.pago)
+    )
+      throw new BadRequestException(
+        'Esta ação não pode ser feita, pois uma operação financeira já foi realizada.',
+      );
+
+    return this.prisma.solicitacao.update({
+      data: {
+        ativo: false,
+      },
+      where: {
+        id,
+      },
+    });
+  }
+
+  async listarPorId(id: number) {
+    const solicitacao = await this.prisma.solicitacao.findUnique({
+      select: {
+        id: true,
+        dataSolicitacao: true,
+        usuarioId: true,
+        usuario: true,
+        dataInicial: true,
+        urgente: true,
+        dataFinal: true,
+        endereco: true,
+        observacao: true,
+        material: true,
+        iMovelId: true,
+        ativo: true,
+      },
+      where: {
+        id,
+      },
+    });
+
+    if (!solicitacao)
+      throw new BadRequestException('Não há solicitações para esse usuário');
+
+    return solicitacao;
+  }
+
+  async listarDados(solicitacao: any) {
+    const visita = await this.prisma.visita.findMany({
+      where: {
+        solicitacaoId: solicitacao.id,
+      },
+    });
+
+    const orcamento = await this.prisma.orcamento.findMany({
+      select: {
+        id: true,
+        usuarioId: true,
+        dataEntrega: true,
+        dataCriacao: true,
+        solicitacaoId: true,
+        observacao: true,
+        maoObra: true,
+        concluido: true,
+        pago: true,
+        material: true,
+        diarioObra: true,
+        requisicaoId: true,
+        avaliacaoId: true,
+        transacaoId: true,
+        imagem: true,
+        usuarioCollaborador: true,
+        requisicao: true,
+        avaliacao: true,
+        solicitacao: true,
+        taxasExtras: true,
+        transacao: true,
+      },
+      where: {
+        solicitacaoId: solicitacao.id,
+      },
+    });
+
+    if (orcamento) {
+      const descontoData = await this.prisma.desconto.findFirst({
+        where: {
+          userId: solicitacao.usuarioId,
+          ativado: false,
+        },
+        orderBy: {
+          taxa: 'desc',
+        },
+      });
+
+      orcamento['desconto'] = {
+        ativado: descontoData.ativado,
+        cupomId: descontoData.cupomId,
+        desconto: descontoData.taxa,
+        id: descontoData.id,
+      };
+    }
+
+    solicitacao['visita'] = visita;
+
+    return {
+      solicitacao,
+      visita,
+      orcamento,
+    };
+  }
+
+  async listarPorFiltros(
+    usuario: DadosUsuarioLogado,
+    filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
+  ) {
+    const include = this.getTabelas(filtroListarSolicitacaoDto);
+    const where = this.getFiltros(filtroListarSolicitacaoDto);
+
+    switch (usuario.perfilId) {
+      case PerfilEnum.CLIENTE:
+        return this.prisma.solicitacao.findMany({
+          include,
+          where: {
+            usuarioId: usuario.id,
+            ...where,
+          },
+          orderBy: {
+            dataSolicitacao: 'desc',
+          },
+        });
+
+      case PerfilEnum.ADMIN:
+      case PerfilEnum.COLABORADOR:
+      case PerfilEnum.FORNECEDOR:
+        return this.prisma.solicitacao.findMany({
+          include,
+          where,
+          orderBy: {
+            dataSolicitacao: 'desc',
+          },
+        });
+    }
+  }
+
+  getFiltros(
+    filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
+  ): Prisma.SolicitacaoWhereInput {
+    return {
+      id: filtroListarSolicitacaoDto.filtrarPor.includes('id')
+        ? +filtroListarSolicitacaoDto.filtroValor[
+            filtroListarSolicitacaoDto.filtrarPor.findIndex(
+              (value) => value == 'id',
+            )
+          ]
+        : undefined,
+      endereco: filtroListarSolicitacaoDto.filtrarPor.includes('endereco')
+        ? filtroListarSolicitacaoDto.filtroValor[
+            filtroListarSolicitacaoDto.filtrarPor.findIndex(
+              (value) => value == 'endereco',
+            )
+          ]
+        : undefined,
+      dataFinal: filtroListarSolicitacaoDto.filtrarPor.includes('dataFinal')
+        ? filtroListarSolicitacaoDto.filtroValor[
+            filtroListarSolicitacaoDto.filtrarPor.findIndex(
+              (value) => value == 'dataFinal',
+            )
+          ]
+        : undefined,
+      servicoSolicitacao:
+        filtroListarSolicitacaoDto.filtrarPor.includes('categoriaId') ||
+        filtroListarSolicitacaoDto.filtrarPor.includes('servicoId')
+          ? {
+              some: {
+                servico: filtroListarSolicitacaoDto.filtrarPor.includes(
+                  'categoriaId',
+                )
+                  ? {
+                      CategoriaId:
+                        +filtroListarSolicitacaoDto.filtroValor[
+                          filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                            (value) => value == 'categoriaId',
+                          )
+                        ],
+                    }
+                  : undefined,
+                servicoId: filtroListarSolicitacaoDto.filtrarPor.includes(
+                  'servicoId',
+                )
+                  ? +filtroListarSolicitacaoDto.filtroValor[
+                      filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                        (value) => value == 'servicoId',
+                      )
+                    ]
+                  : undefined,
+              },
+            }
+          : undefined,
+      usuario:
+        filtroListarSolicitacaoDto.filtrarPor.includes('emailCliente') &&
+        filtroListarSolicitacaoDto.filtrarPor.includes('nomeCliente')
+          ? {
+              nome: filtroListarSolicitacaoDto.filtrarPor.includes(
+                'nomeCliente',
+              )
+                ? filtroListarSolicitacaoDto.filtroValor[
+                    filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                      (value) => value == 'nomeCliente',
+                    )
+                  ]
+                : undefined,
+              email: filtroListarSolicitacaoDto.filtrarPor.includes(
+                'emailCliente',
+              )
+                ? filtroListarSolicitacaoDto.filtroValor[
+                    filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                      (value) => value == 'emailCliente',
+                    )
+                  ]
+                : undefined,
+            }
+          : undefined,
+      ativo:
+        (filtroListarSolicitacaoDto.filtrarPor.includes('exibirCancelados') &&
+          ['false', '0'].includes(
+            filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'exibirCancelados',
+              )
+            ],
+          )) ||
+        (filtroListarSolicitacaoDto.filtrarPor.includes('ativo') &&
+          ['true', '1'].includes(
+            filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'ativo',
+              )
+            ],
+          )) ||
+        undefined,
+
+      orcamentos: {
+        every:
+          filtroListarSolicitacaoDto.filtrarPor.includes('exibirConcluidos') &&
+          ['false', '0'].includes(
+            filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'exibirConcluidos',
+              )
+            ],
+          )
+            ? {
+                OR: [
+                  {
+                    concluido: false,
+                  },
+                  {
+                    avaliacaoId: null,
+                  },
+                ],
+              }
+            : undefined,
+        some: {
+          OR: [
+            filtroListarSolicitacaoDto.filtrarPor.includes('status') &&
+            +filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'status',
+              )
+            ] == 3
+              ? {
+                  pago: false,
+                  taxasExtras: {
+                    some: {},
+                  },
+                }
+              : null,
+            filtroListarSolicitacaoDto.filtrarPor.includes('status') &&
+            +filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'status',
+              )
+            ] == 4
+              ? {
+                  pago: true,
+                  concluido: false,
+                }
+              : null,
+            filtroListarSolicitacaoDto.filtrarPor.includes('status') &&
+            +filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'status',
+              )
+            ] == 5
+              ? {
+                  pago: true,
+                  concluido: true,
+                  avaliacaoId: null,
+                }
+              : null,
+
+            filtroListarSolicitacaoDto.filtrarPor.includes('status') &&
+            +filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'status',
+              )
+            ] == 6
+              ? {
+                  pago: true,
+                  concluido: true,
+                  avaliacaoId: {
+                    not: null,
+                  },
+                }
+              : null,
+          ].filter((value) => !!value),
+        },
+      },
+      visitas:
+        filtroListarSolicitacaoDto.filtrarPor.includes('status') &&
+        +filtroListarSolicitacaoDto.filtroValor[
+          filtroListarSolicitacaoDto.filtrarPor.findIndex(
+            (value) => value == 'status',
+          )
+        ] == 2
+          ? {
+              some: {
+                pago: false,
+              },
+            }
+          : undefined,
+    };
+  }
+
+  getTabelas(filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto) {
+    return filtroListarSolicitacaoDto.filtrarPor.includes('status')
+      ? {
+          orcamentos: [3, 4, 5, 6].includes(
+            +filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'status',
+              )
+            ],
+          ),
+          visitas: [1, 2].includes(
+            +filtroListarSolicitacaoDto.filtroValor[
+              filtroListarSolicitacaoDto.filtrarPor.findIndex(
+                (value) => value == 'status',
+              )
+            ],
+          ),
+        }
+      : undefined;
+  }
+}
