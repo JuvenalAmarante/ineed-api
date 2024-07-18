@@ -18,7 +18,7 @@ import { SmsService } from 'src/shared/services/sms/sms.service';
 import { AtualizarOrcamentoDto } from './dto/atualizar-orcamento.dto';
 import { MetodoPagamentoEnum } from 'src/shared/enums/metodo-pagamento.enum';
 import { PushNotificationService } from 'src/shared/services/push-notification/push-notification.service';
-import { TipoNotificacao } from './enums/tipo-notificacao.enum';
+import { TipoNotificacaoEnum } from './enums/tipo-notificacao.enum';
 import { AvaliarOrcamentoDto } from './dto/avaliar-orcamento.dto';
 
 @Injectable()
@@ -106,7 +106,7 @@ export class OrcamentoService {
       cadastrarOrcamentoDto.usuarioId,
       valores,
       data,
-      TipoNotificacao.CADASTRO,
+      TipoNotificacaoEnum.CADASTRO,
     );
   }
 
@@ -275,7 +275,7 @@ export class OrcamentoService {
       orcamento.usuarioId,
       valores,
       data,
-      TipoNotificacao.PAGAMENTO,
+      TipoNotificacaoEnum.PAGAMENTO,
     );
 
     return orcamento;
@@ -459,7 +459,7 @@ export class OrcamentoService {
     usuarioId: number,
     valores: string[] = [],
     data: Record<string, any> = {},
-    tipo: TipoNotificacao,
+    tipo: TipoNotificacaoEnum,
   ) {
     const destinatario = await this.prisma.usuario.findUnique({
       include: {
@@ -482,17 +482,17 @@ export class OrcamentoService {
   private async enviarEmail(
     email: string,
     valores: string[] = [],
-    tipo: TipoNotificacao,
+    tipo: TipoNotificacaoEnum,
   ) {
     let assunto = '';
     let mensagem = `<div style="background-color: #DFDFDF; padding: 10px; min-height: 400px;"><div style="max-width: 800px; background-color: #ffffff; border: solid 1px #707070; border-radius: 3px; margin: 3em auto; padding: 0px;"><div style="text-align:center;"><img style="padding-top: 25px" src="http://fixit-togo.com.br/images/logo.png"></img><br/>`;
 
     switch (tipo) {
-      case TipoNotificacao.CADASTRO:
+      case TipoNotificacaoEnum.CADASTRO:
         assunto = 'FixIt - Orçamento criado';
         mensagem += `<div style="background-color: #3E3E3E; text-align: center;"><h1 style="font-family: sans-serif; font-size: 2em; color: #ffffff; padding: 0.5em">${assunto.substring(8)}</h1></div><div style="padding: 3em; ">Olá, <br/><br/>Geramos um orçamento,<br/>acesse o aplicativo do FixIt para visualizá-lo.<br/>`;
         break;
-      case TipoNotificacao.PAGAMENTO:
+      case TipoNotificacaoEnum.PAGAMENTO:
         assunto = `FixIt - Orçamento confirmado`;
         mensagem += `<div style=\"background-color: #3E3E3E; text-align: center;\"><h1 style=\"font-family: sans-serif; font-size: 2em; color: #ffffff; padding: 0.5em\">" + assunto.Substring(8) + "</h1></div><div style=\"padding: 3em; \">Olá, <br/><br/>O cliente confirmou o seu orçamento,<br />acesse o aplicativo do FixIt para ver mais informações.<br/>`;
         break;
@@ -509,10 +509,10 @@ export class OrcamentoService {
     }
   }
 
-  private async enviarSMS(telefone: string, tipo: TipoNotificacao) {
+  private async enviarSMS(telefone: string, tipo: TipoNotificacaoEnum) {
     let mensagem;
     switch (tipo) {
-      case TipoNotificacao.CADASTRO:
+      case TipoNotificacaoEnum.CADASTRO:
         mensagem =
           'Fixit: Geramos um orcamento, acesse o aplicativo para visualizar.';
         break;
@@ -526,17 +526,17 @@ export class OrcamentoService {
   private async enviarNotificacaoPush(
     tokens: string[],
     data: Record<string, any>,
-    tipo: TipoNotificacao,
+    tipo: TipoNotificacaoEnum,
   ) {
     let titulo = '';
     let mensagem = ``;
 
     switch (tipo) {
-      case TipoNotificacao.CADASTRO:
+      case TipoNotificacaoEnum.CADASTRO:
         titulo = 'Novo orçamento';
         mensagem += `Um novo orçamento foi criado. Deseja ver agora?`;
         break;
-      case TipoNotificacao.PAGAMENTO:
+      case TipoNotificacaoEnum.PAGAMENTO:
         titulo = `Orçamento pago`;
         mensagem += `Seu orçamento foi pago. Deseja ver agora?`;
         break;

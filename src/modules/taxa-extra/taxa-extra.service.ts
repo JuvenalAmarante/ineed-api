@@ -4,6 +4,9 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/shared/services/prisma/prisma.service';
 import { PushNotificationService } from 'src/shared/services/push-notification/push-notification.service';
 import { PerfilEnum } from 'src/shared/enums/perfil.enum';
+import { PagarTaxaExtra } from './dto/pagar-taxa-extra.dto';
+import { Decimal } from '@prisma/client/runtime/library';
+import { TipoTaxaExtraEnum } from './enums/tipo-taxa-extra.enum';
 
 @Injectable()
 export class TaxaExtraService {
@@ -71,12 +74,84 @@ export class TaxaExtraService {
       valor: taxaExtra.valor.toNumber().toLocaleString('pt-BR'),
     };
 
-    await this.enviarNotificacaoPush(solicitacao.usuarioId, data);
+    await this.enviarNotificacaoPush(
+      solicitacao.usuarioId,
+      data,
+      TipoTaxaExtraEnum.CADASTRO,
+    );
+  }
+
+  async pagar(usuario: DadosUsuarioLogado, pagarTaxaExtra: PagarTaxaExtra) {
+    let taxaExtra = await this.prisma.taxaExtra.findUnique({
+      where: {
+        id: pagarTaxaExtra.id,
+      },
+    });
+
+    if (taxaExtra.pago) throw new BadRequestException('A taxa já foi paga');
+
+    const orcamento = await this.prisma.orcamento.findUnique({
+      where: {
+        id: taxaExtra.orcamentoId,
+      },
+    });
+
+    if (!orcamento) throw new BadRequestException('Orçamento não encontrado');
+
+    const solicitacao = await this.prisma.solicitacao.findUnique({
+      where: {
+        id: orcamento.solicitacaoId,
+      },
+    });
+
+    if (usuario.perfilId != PerfilEnum.CLIENTE)
+      throw new BadRequestException(
+        'Você não é um cliente para pagar uma taxa extra',
+      );
+
+    if (usuario.id != solicitacao.usuarioId)
+      throw new BadRequestException(
+        'Usuário sem permissão para concluir pagamento',
+      );
+
+    // TODO: Adicionar cartao
+    const cartao = null;
+
+    if (!cartao) throw new BadRequestException('Cartão não encontrado');
+
+    const valorDaTaxa = Decimal.mul(taxaExtra.valor, 100);
+
+    // TODO: Realizar pagamento
+    console.log('PAGAMENTO DO VALOR', valorDaTaxa);
+
+    taxaExtra = await this.prisma.taxaExtra.update({
+      data: {
+        pago: true,
+      },
+      where: {
+        id: pagarTaxaExtra.id,
+      },
+    });
+
+    const data = {
+      status: 'orcamento-taxa-extra',
+      solicitacaoId: orcamento.solicitacaoId,
+      valor: taxaExtra.valor.toNumber().toLocaleString('pt-BR'),
+    };
+
+    await this.enviarNotificacaoPush(
+      solicitacao.usuarioId,
+      data,
+      TipoTaxaExtraEnum.PAGAMENTO,
+    );
+
+    return taxaExtra;
   }
 
   private async enviarNotificacaoPush(
     usuarioId: number,
     data: Record<string, any>,
+    tipo: TipoTaxaExtraEnum,
   ) {
     const destinatario = await this.prisma.usuario.findUnique({
       include: {
@@ -87,14 +162,27 @@ export class TaxaExtraService {
       },
     });
 
-    const titulo = 'Nova taxa extra';
-    const mensagem = `Sua obra possui uma nova taxa extra de ${data.valor}`;
+    let titulo = '';
+    let mensagem = ``;
 
-    await this.pushNotificationService.enviarNotificacaoPush(
-      destinatario.acesso.map((acesso) => acesso.FcmToken),
-      titulo,
-      mensagem,
-      data,
-    );
+    switch (tipo) {
+      case TipoTaxaExtraEnum.CADASTRO:
+        titulo = 'Nova taxa extra';
+        mensagem = `Sua obra possui uma nova taxa extra de ${data.valor}`;
+        break;
+      case TipoTaxaExtraEnum.PAGAMENTO:
+        titulo = 'Taxa extra paga';
+        mensagem = `A taxa no valor de ${data.valor} foi paga ♥`;
+        break;
+    }
+
+    if (titulo) {
+      await this.pushNotificationService.enviarNotificacaoPush(
+        destinatario.acesso.map((acesso) => acesso.FcmToken),
+        titulo,
+        mensagem,
+        data,
+      );
+    }
   }
 }
