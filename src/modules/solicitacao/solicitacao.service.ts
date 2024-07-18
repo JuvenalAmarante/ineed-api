@@ -329,7 +329,7 @@ export class SolicitacaoService {
                   'categoriaId',
                 )
                   ? {
-                      CategoriaId:
+                      categoriaId:
                         +filtroListarSolicitacaoDto.filtroValor[
                           filtroListarSolicitacaoDto.filtrarPor.findIndex(
                             (value) => value == 'categoriaId',

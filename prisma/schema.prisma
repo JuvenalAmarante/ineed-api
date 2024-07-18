@@ -38,12 +38,13 @@ model Avaliacao {
 }
 
 model Categoria {
-  Id           Int       @id(map: "PK_dbo.Categoria") @default(autoincrement())
-  valor        String    @db.NVarChar(Max)
-  Imagem       String    @db.NVarChar(Max)
-  Inativo      Boolean
-  CategoriaPai Int?
-  Servico      Servico[]
+  id           Int     @id(map: "PK_dbo.Categoria") @default(autoincrement()) @map("Id")
+  valor        String  @map("valor") @db.NVarChar(Max)
+  imagem       String  @map("Imagem") @db.NVarChar(Max)
+  inativo      Boolean @map("Inativo")
+  categoriaPai Int?    @map("CategoriaPai")
+
+  servico Servico[]
 }
 
 model Cidade {
@@ -217,18 +218,20 @@ model Requisicao {
 }
 
 model Servico {
-  Id                 Int                  @id(map: "PK_dbo.Servico") @default(autoincrement())
-  Nome               String               @db.NVarChar(Max)
-  Descricao          String               @db.NVarChar(Max)
-  imagem             String?              @db.NVarChar(Max)
-  DataCadastro       DateTime             @db.DateTime
-  IdUsuarioCadastro  Int
-  CategoriaId        Int
-  Inativo            Boolean
-  Categoria          Categoria            @relation(fields: [CategoriaId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Servico_dbo.Categoria_CategoriaId")
-  ServicoSolicitacao ServicoSolicitacao[]
+  id                Int      @id(map: "PK_dbo.Servico") @default(autoincrement()) @map("Id")
+  nome              String   @map("Nome") @db.NVarChar(Max)
+  descricao         String   @map("Descricao") @db.NVarChar(Max)
+  imagem            String?  @map("imagem") @db.NVarChar(Max)
+  dataCadastro      DateTime @map("DataCadastro") @db.DateTime
+  idUsuarioCadastro Int      @map("IdUsuarioCadastro")
+  categoriaId       Int      @map("CategoriaId")
+  inativo           Boolean  @map("Inativo")
 
-  @@index([CategoriaId], map: "IX_CategoriaId")
+  servicoSolicitacao ServicoSolicitacao[]
+
+  categoria Categoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Servico_dbo.Categoria_CategoriaId")
+
+  @@index([categoriaId], map: "IX_CategoriaId")
 }
 
 model ServicoSolicitacao {
@@ -236,7 +239,7 @@ model ServicoSolicitacao {
   servicoId     Int @map("ServicoId")
   solicitacaoId Int @map("SolicitacaoId")
 
-  servico     Servico     @relation(fields: [servicoId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.ServicoSolicitacao_dbo.Servico_ServicoId")
+  servico     Servico     @relation(fields: [servicoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.ServicoSolicitacao_dbo.Servico_ServicoId")
   solicitacao Solicitacao @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.ServicoSolicitacao_dbo.Solicitacao_SolicitacaoId")
 
   @@index([servicoId], map: "IX_ServicoId")

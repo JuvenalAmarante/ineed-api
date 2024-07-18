@@ -14,6 +14,8 @@ import { SmsModule } from './shared/services/sms/sms.module';
 import { PushNotificationModule } from './shared/services/push-notification/push-notification.module';
 import { SolicitacaoModule } from './modules/solicitacao/solicitacao.module';
 import { S3Module } from './shared/services/s3/s3.module';
+import { CategoriaModule } from './modules/categoria/categoria.module';
+import { ServicoModule } from './modules/servico/servico.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { S3Module } from './shared/services/s3/s3.module';
     PushNotificationModule,
     SolicitacaoModule,
     S3Module,
+    CategoriaModule,
+    ServicoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
