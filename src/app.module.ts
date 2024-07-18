@@ -13,6 +13,7 @@ import { OrcamentoModule } from './modules/orcamento/orcamento.module';
 import { SmsModule } from './shared/services/sms/sms.module';
 import { PushNotificationModule } from './shared/services/push-notification/push-notification.module';
 import { SolicitacaoModule } from './modules/solicitacao/solicitacao.module';
+import { S3Module } from './shared/services/s3/s3.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { SolicitacaoModule } from './modules/solicitacao/solicitacao.module';
     SmsModule,
     PushNotificationModule,
     SolicitacaoModule,
+    S3Module,
   ],
   controllers: [AppController],
   providers: [AppService],

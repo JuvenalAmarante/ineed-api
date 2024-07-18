@@ -1,3 +1,4 @@
+import { S3Service } from './../../shared/services/s3/s3.service';
 import {
   BadRequestException,
   ForbiddenException,
@@ -8,10 +9,16 @@ import { FiltroListarSolicitacaoDto } from './dto/filtro-listar-solicitacao.dto'
 import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.entity';
 import { PerfilEnum } from 'src/shared/enums/perfil.enum';
 import { Prisma } from '@prisma/client';
+import { CriarSolicitacaoDto } from './dto/criar-solicitacao.dto';
+import { MailService } from 'src/shared/services/mail/mail.service';
 
 @Injectable()
 export class SolicitacaoService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   async listar(
     usuario: DadosUsuarioLogado,
@@ -87,7 +94,84 @@ export class SolicitacaoService {
     });
   }
 
-  async listarPorId(id: number) {
+  async criar(
+    usuarioId: number,
+    criarSolicitacaoDto: CriarSolicitacaoDto,
+    files: Array<Express.Multer.File>,
+  ) {
+    const solicitacao = await this.prisma.$transaction(async (transaction) => {
+      let solicitacao = await transaction.solicitacao.findFirst({
+        where: {
+          usuarioId,
+          dataInicial: criarSolicitacaoDto.dataInicial,
+          urgente: criarSolicitacaoDto.urgente,
+          dataFinal: criarSolicitacaoDto.dataFinal,
+          endereco: criarSolicitacaoDto.endereco,
+          observacao: criarSolicitacaoDto.observacao,
+          material: criarSolicitacaoDto.material,
+          iMovelId: criarSolicitacaoDto.imovelId,
+        },
+      });
+
+      if (solicitacao)
+        throw new BadRequestException('Solicitação já cadastrada');
+
+      solicitacao = await transaction.solicitacao.create({
+        data: {
+          dataSolicitacao: new Date(),
+          usuarioId,
+          dataInicial: criarSolicitacaoDto.dataInicial,
+          urgente: criarSolicitacaoDto.urgente,
+          dataFinal: criarSolicitacaoDto.dataFinal,
+          endereco: criarSolicitacaoDto.endereco,
+          observacao: criarSolicitacaoDto.observacao,
+          material: criarSolicitacaoDto.material,
+          iMovelId: criarSolicitacaoDto.imovelId,
+          ativo: true,
+          servicoSolicitacao: {
+            createMany: {
+              data: criarSolicitacaoDto.servicoId.map((servicoId) => ({
+                servicoId,
+              })),
+            },
+          },
+        },
+      });
+
+      for (const file in files) {
+        const url = await this.s3Service.upload(files[file]);
+
+        await transaction.imagemSolicitacao.create({
+          data: {
+            solicitacaoId: solicitacao.id,
+            valor: url,
+          },
+        });
+      }
+
+      return solicitacao;
+    });
+
+    const valores = [
+      solicitacao.urgente ? 'Solicitação de extrema urgência!' : '',
+      solicitacao.dataInicial.getFullYear() > 1000
+        ? `Data inicial: ${solicitacao.dataInicial.toLocaleDateString('pt-BR')}`
+        : '',
+      solicitacao.dataSolicitacao.getFullYear() > 1000
+        ? `Data da solicitação: ${solicitacao.dataSolicitacao.toLocaleDateString('pt-BR')}`
+        : '',
+      `Endereço: ${solicitacao.endereco}`,
+      solicitacao.observacao != null && solicitacao.observacao != ''
+        ? `◊Observação: ${solicitacao.observacao}`
+        : '',
+    ];
+
+    await this.enviarNotificacao(solicitacao.usuarioId, valores);
+
+    return solicitacao;
+  }
+
+  private async listarPorId(id: number) {
     const solicitacao = await this.prisma.solicitacao.findUnique({
       select: {
         id: true,
@@ -114,7 +198,7 @@ export class SolicitacaoService {
     return solicitacao;
   }
 
-  async listarDados(solicitacao: any) {
+  private async listarDados(solicitacao: any) {
     const visita = await this.prisma.visita.findMany({
       where: {
         solicitacaoId: solicitacao.id,
@@ -178,7 +262,7 @@ export class SolicitacaoService {
     };
   }
 
-  async listarPorFiltros(
+  private async listarPorFiltros(
     usuario: DadosUsuarioLogado,
     filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
   ) {
@@ -211,7 +295,7 @@ export class SolicitacaoService {
     }
   }
 
-  getFiltros(
+  private getFiltros(
     filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
   ): Prisma.SolicitacaoWhereInput {
     return {
@@ -401,7 +485,7 @@ export class SolicitacaoService {
     };
   }
 
-  getTabelas(filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto) {
+  private getTabelas(filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto) {
     return filtroListarSolicitacaoDto.filtrarPor.includes('status')
       ? {
           orcamentos: [3, 4, 5, 6].includes(
@@ -420,5 +504,31 @@ export class SolicitacaoService {
           ),
         }
       : undefined;
+  }
+
+  private async enviarNotificacao(usuarioId: number, valores: string[] = []) {
+    const destinatario = await this.prisma.usuario.findUnique({
+      include: {
+        acesso: true,
+      },
+      where: {
+        id: usuarioId,
+      },
+    });
+
+    await this.enviarEmail(destinatario.email, valores);
+  }
+
+  private async enviarEmail(email: string, valores: string[] = []) {
+    const assunto = 'FixIt - Nova solicitação';
+    let mensagem = `<div style="background-color: #DFDFDF; padding: 10px; min-height: 400px;"><div style="max-width: 800px; background-color: #ffffff; border: solid 1px #707070; border-radius: 3px; margin: 3em auto; padding: 0px;"><div style="text-align:center;"><img style="padding-top: 25px" src="http://fixit-togo.com.br/images/logo.png"></img><br/><div style="background-color: #3E3E3E; text-align: center;"><h1 style="font-family: sans-serif; font-size: 2em; color: #ffffff; padding: 0.5em">${assunto.substring(8)}</h1></div><div style="padding: 3em; ">Olá, <br/><br/>Uma nova solicitação foi criada,<br/>acesse o aplicativo do FixIt para visualizá-la.<br/>`;
+
+    for (const valor in valores) {
+      mensagem += `<br/>${valor}<br/>`;
+    }
+
+    mensagem += `<br/>Abraços da equipe FixIt.<br/></div></div></div><div style=\"color: #787878; text-align: center;\"><p>Não responda este e-mail, e-mail automático.</p><p>Aplicativo disponível na <a href=\"https://play.google.com/store/apps/details?id=br.com.prolins.fixitToGo\">Google Play</a> e na <a href=\"https://itunes.apple.com/br/app/fixit/id1373851231?mt=8\">App Store</a></p><p>Em caso de qualquer dúvida, fique à vontade<br/>para enviar um e-mail para <a href=\"mailto:fixit@fixit-togo.com.br\">fixit@fixit-togo.com.br</a></p></div>`;
+
+    await this.mailService.enviarEmailHtml(email, assunto, mensagem);
   }
 }

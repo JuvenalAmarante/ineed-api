@@ -470,9 +470,9 @@ export class OrcamentoService {
       },
     });
 
-    this.enviarSMS(destinatario.telefone, tipo);
-    this.enviarEmail(destinatario.email, valores, tipo);
-    this.enviarNotificacaoPush(
+    await this.enviarSMS(destinatario.telefone, tipo);
+    await this.enviarEmail(destinatario.email, valores, tipo);
+    await this.enviarNotificacaoPush(
       destinatario.acesso.map((acesso) => acesso.FcmToken),
       data,
       tipo,
