@@ -24,7 +24,7 @@ export class FiltroListarSolicitacaoDto {
   @Validate((value) => value)
   @IsOptional()
   @Transform(({ value }) => value.split(','))
-  filtrarPor: string[];
+  filtrarPor?: string[];
 
   @ValidateIf((obj) => !!obj.filtrarPor)
   @IsString({
@@ -36,5 +36,5 @@ export class FiltroListarSolicitacaoDto {
   })
   @Validate(ValidarQuantidade)
   @Transform(({ value }) => value.split(','))
-  filtroValor: string[];
+  filtroValor?: string[];
 }
