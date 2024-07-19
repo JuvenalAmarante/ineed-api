@@ -17,6 +17,7 @@ import { S3Module } from './shared/services/s3/s3.module';
 import { CategoriaModule } from './modules/categoria/categoria.module';
 import { ServicoModule } from './modules/servico/servico.module';
 import { TaxaExtraModule } from './modules/taxa-extra/taxa-extra.module';
+import { VisitaModule } from './modules/visita/visita.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { TaxaExtraModule } from './modules/taxa-extra/taxa-extra.module';
     CategoriaModule,
     ServicoModule,
     TaxaExtraModule,
+    VisitaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

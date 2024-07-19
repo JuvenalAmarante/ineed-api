@@ -29,12 +29,12 @@ export class OrcamentoController {
   async listar(
     @CurrentUser() usuario: DadosUsuarioLogado,
     @Query() filtroListarOrcamentoDto: FiltroListarOrcamentoDto,
-    @Headers('Page') paginaAtual?: number,
+    @Headers('Page') paginaAtual: string,
   ) {
     const dados = await this.orcamentoService.listar(
       usuario,
       filtroListarOrcamentoDto,
-      paginaAtual,
+      +paginaAtual,
     );
 
     if (!filtroListarOrcamentoDto.id)
