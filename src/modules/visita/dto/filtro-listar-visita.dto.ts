@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional } from 'class-validator';
 
 export class FiltroListarVisitaDto {
   @IsInt({
@@ -8,10 +8,4 @@ export class FiltroListarVisitaDto {
   @IsOptional()
   @Type(() => Number)
   id: number;
-
-  @IsString({
-    message: 'O campo pesquisa é inválido',
-  })
-  @IsOptional()
-  search: string;
 }

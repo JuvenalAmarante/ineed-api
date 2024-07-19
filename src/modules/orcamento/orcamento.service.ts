@@ -96,6 +96,7 @@ export class OrcamentoService {
     ];
 
     const data = {
+      status: 'orcamento-criado',
       visitaId: visita.id,
       solicitacaoId: solicitacao.id,
       estimateId: orcamento.id,
@@ -494,7 +495,7 @@ export class OrcamentoService {
         break;
       case TipoNotificacaoEnum.PAGAMENTO:
         assunto = `FixIt - Orçamento confirmado`;
-        mensagem += `<div style=\"background-color: #3E3E3E; text-align: center;\"><h1 style=\"font-family: sans-serif; font-size: 2em; color: #ffffff; padding: 0.5em\">" + assunto.Substring(8) + "</h1></div><div style=\"padding: 3em; \">Olá, <br/><br/>O cliente confirmou o seu orçamento,<br />acesse o aplicativo do FixIt para ver mais informações.<br/>`;
+        mensagem += `<div style=\"background-color: #3E3E3E; text-align: center;\"><h1 style=\"font-family: sans-serif; font-size: 2em; color: #ffffff; padding: 0.5em\">${assunto.substring(8)}</h1></div><div style=\"padding: 3em; \">Olá, <br/><br/>O cliente confirmou o seu orçamento,<br />acesse o aplicativo do FixIt para ver mais informações.<br/>`;
         break;
     }
 
