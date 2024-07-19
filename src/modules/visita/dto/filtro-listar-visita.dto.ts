@@ -7,5 +7,5 @@ export class FiltroListarVisitaDto {
   })
   @IsOptional()
   @Type(() => Number)
-  id: number;
+  id?: number;
 }

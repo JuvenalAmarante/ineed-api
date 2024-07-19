@@ -8,6 +8,7 @@ import { TipoVisitaEnum } from './enums/tipo-visita.enum';
 import { PushNotificationService } from 'src/shared/services/push-notification/push-notification.service';
 import { MailService } from 'src/shared/services/mail/mail.service';
 import { SmsService } from 'src/shared/services/sms/sms.service';
+import { ConfirmarVisitaDto } from './dto/confirmar-visita.dto';
 
 @Injectable()
 export class VisitaService {
@@ -112,7 +113,89 @@ export class VisitaService {
     return visita;
   }
 
-  // confirmar
+  async confirmar(
+    usuario: DadosUsuarioLogado,
+    visitaId: number,
+    confirmarVisitaDto: ConfirmarVisitaDto,
+  ) {
+    if (isNaN(visitaId)) throw new BadRequestException('Visita inválida');
+
+    let visita;
+    let solicitacao;
+
+    if (confirmarVisitaDto.concluida) {
+      visita = await this.prisma.visita.update({
+        data: {
+          concluida: true,
+        },
+        where: {
+          id: visitaId,
+        },
+      });
+
+      solicitacao = await this.prisma.solicitacao.findFirst({
+        where: {
+          id: visita.solicitacaoId,
+        },
+      });
+    } else if (confirmarVisitaDto.pago) {
+      if (confirmarVisitaDto.cartaoId) {
+        // TODO: adicionar cartão
+        const cartao = { id: 1 };
+
+        // TODO: adicionar compra cartao
+        const requisicao = { id: 1, cartaoId: cartao.id };
+
+        visita = await this.prisma.visita.update({
+          data: {
+            pago: true,
+            requisicaoId: requisicao.id,
+          },
+          where: {
+            id: visitaId,
+          },
+        });
+      } else {
+        visita = await this.prisma.visita.update({
+          data: {
+            pago: true,
+          },
+          where: {
+            id: visitaId,
+          },
+        });
+
+        solicitacao = await this.prisma.solicitacao.findFirst({
+          where: {
+            id: visita.solicitacaoId,
+          },
+        });
+      }
+    } else {
+      throw new BadRequestException('Dados inválidos');
+    }
+
+    const valores = [
+      `Data da criação: ${visita.dataCriacao.toLocaleString('pt-BR')}`,
+      `Data da visita: ${visita.dataVisita.toLocaleString('pt-BR')}`,
+      `Valor: R$ ${visita.valor.toNumber().toLocaleString('pt-BR')}`,
+    ];
+
+    const data = {
+      visitaId: visita.id,
+      solicitacaoId: solicitacao.id,
+      hasMaterial: solicitacao.material,
+    };
+
+    await this.enviarNotificacao(
+      solicitacao.usuarioId,
+      valores,
+      data,
+      TipoVisitaEnum.CADASTRO,
+    );
+
+    return visita;
+  }
 
   private async listarPorId(id: number) {
     const visita = await this.prisma.visita.findFirst({
@@ -230,6 +313,12 @@ export class VisitaService {
         mensagem += `<div style="background-color: #3E3E3E; text-align: center;"><h1 style="font-family: sans-serif; font-size: 2em; color: #ffffff; padding: 0.5em">${assunto.substring(8)}</h1></div><div style="padding: 3em; ">Olá, <br/><br/>Você tem uma nova visita agendada,<br/> acesse o aplicativo do FixIt para mais informações.<br />`;
         break;
       case TipoVisitaEnum.PAGAMENTO:
+        assunto = 'FixIt - Visita confirmada';
+        mensagem += `<div style="background-color: #3E3E3E; text-align: center;"><h1 style="font-family: sans-serif; font-size: 2em; color: #ffffff; padding: 0.5em">${assunto.substring(8)}</h1></div><div style="padding: 3em; ">Olá, <br/><br/>A sua visita foi confirmada,<br/>acesse o aplicativo do FixIt para mais informações.<br/>`;
+        break;
+      case TipoVisitaEnum.CONCLUIDO:
+        assunto = 'FixIt - Visita concluída';
+        mensagem += `<div style="background-color: #3E3E3E; text-align: center;"><h1 style="font-family: sans-serif; font-size: 2em; color: #ffffff; padding: 0.5em">${assunto.substring(8)}</h1></div><div style="padding: 3em; ">Olá, <br/><br/>Sua visita foi concluída,<br/>acesse o aplicativo do FixIt para avaliar.<br />`;
         break;
     }
 
@@ -238,7 +327,7 @@ export class VisitaService {
         mensagem += `<br/>${valor}<br/>`;
       }
 
-      mensagem += `<br/>Abraços da equipe FixIt.<br/></div></div></div><div style=\"color: #787878; text-align: center;\"><p>Não responda este e-mail, e-mail automático.</p><p>Aplicativo disponível na <a href=\"https://play.google.com/store/apps/details?id=br.com.prolins.fixitToGo\">Google Play</a> e na <a href=\"https://itunes.apple.com/br/app/fixit/id1373851231?mt=8\">App Store</a></p><p>Em caso de qualquer dúvida, fique à vontade<br/>para enviar um e-mail para <a href=\"mailto:fixit@fixit-togo.com.br\">fixit@fixit-togo.com.br</a></p></div>`;
+      mensagem += `<br/>Abraços da equipe FixIt.<br/></div></div></div><div style="color: #787878; text-align: center;"><p>Não responda este e-mail, e-mail automático.</p><p>Aplicativo disponível na <a href="https://play.google.com/store/apps/details?id=br.com.prolins.fixitToGo">Google Play</a> e na <a href="https://itunes.apple.com/br/app/fixit/id1373851231?mt=8">App Store</a></p><p>Em caso de qualquer dúvida, fique à vontade<br/>para enviar um e-mail para <a href="mailto:fixit@fixit-togo.com.br">fixit@fixit-togo.com.br</a></p></div>`;
 
       await this.mailService.enviarEmailHtml(email, assunto, mensagem);
     }
@@ -247,9 +336,9 @@ export class VisitaService {
   private async enviarSMS(telefone: string, tipo: TipoVisitaEnum) {
     let mensagem;
     switch (tipo) {
-      case TipoVisitaEnum.CADASTRO:
+      case TipoVisitaEnum.CONCLUIDO:
         mensagem =
-          'Fixit: Geramos um orcamento, acesse o aplicativo para visualizar.';
+          'Fixit: Sua visita foi concluida, acesse o aplicativo para avaliar.';
         break;
     }
 
@@ -265,15 +354,18 @@ export class VisitaService {
   ) {
     let titulo = '';
     let mensagem = ``;
+    let status = ``;
 
     switch (tipo) {
       case TipoVisitaEnum.CADASTRO:
         titulo = 'Nova visita';
         mensagem = 'Uma nova visita foi criada. Deseja ver agora?';
+        status = 'visita-criada';
         break;
-      case TipoVisitaEnum.PAGAMENTO:
-        titulo = `Orçamento pago`;
-        mensagem += `Seu orçamento foi pago. Deseja ver agora?`;
+      case TipoVisitaEnum.CONCLUIDO:
+        titulo = 'Visita concluida';
+        mensagem = 'Sua visita foi concluída. Deseja avaliar agora?';
+        status = 'visita-concluida';
         break;
     }
 
@@ -282,7 +374,7 @@ export class VisitaService {
         tokens,
         titulo,
         mensagem,
-        data,
+        { status, ...data },
       );
   }
 }

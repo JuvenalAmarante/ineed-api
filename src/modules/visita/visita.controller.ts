@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Headers,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -13,13 +14,14 @@ import { DadosUsuarioLogado } from 'src/shared/entities/dados-usuario-logado.ent
 import { AuthGuard } from 'src/shared/guards/auth.guard';
 import { FiltroListarVisitaDto } from './dto/filtro-listar-visita.dto';
 import { CadastrarVisitaDto } from './dto/cadastrar-visita.dto';
+import { ConfirmarVisitaDto } from './dto/confirmar-visita.dto';
 
+@UseGuards(AuthGuard)
 @Controller('visita')
 export class VisitaController {
   constructor(private readonly visitaService: VisitaService) {}
 
   @Get()
-  @UseGuards(AuthGuard)
   async listar(
     @CurrentUser() usuario: DadosUsuarioLogado,
     @Query() filtroListarVisitaDto: FiltroListarVisitaDto,
@@ -39,7 +41,6 @@ export class VisitaController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
   async cadastrar(
     @CurrentUser() usuario: DadosUsuarioLogado,
     @Body() cadastrarVisitaDto: CadastrarVisitaDto,
@@ -50,7 +51,25 @@ export class VisitaController {
     );
 
     return {
-      message: 'Visita Cadastrada com Sucesso.',
+      message: 'Visita cadastrada com sucesso.',
+      visita: dados,
+    };
+  }
+
+  @Patch()
+  async confirmar(
+    @CurrentUser() usuario: DadosUsuarioLogado,
+    @Query('id') visitaId: string,
+    @Body() confirmarVisitaDto: ConfirmarVisitaDto,
+  ) {
+    const dados = await this.visitaService.confirmar(
+      usuario,
+      +visitaId,
+      confirmarVisitaDto,
+    );
+
+    return {
+      message: 'Alteração salva com sucesso',
       visita: dados,
     };
   }

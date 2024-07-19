@@ -96,7 +96,6 @@ export class OrcamentoService {
     ];
 
     const data = {
-      status: 'orcamento-criado',
       visitaId: visita.id,
       solicitacaoId: solicitacao.id,
       estimateId: orcamento.id,
@@ -531,15 +530,18 @@ export class OrcamentoService {
   ) {
     let titulo = '';
     let mensagem = ``;
+    let status = ``;
 
     switch (tipo) {
       case TipoNotificacaoEnum.CADASTRO:
         titulo = 'Novo orçamento';
-        mensagem += `Um novo orçamento foi criado. Deseja ver agora?`;
+        mensagem = `Um novo orçamento foi criado. Deseja ver agora?`;
+        status = 'orcamento-criado';
         break;
       case TipoNotificacaoEnum.PAGAMENTO:
         titulo = `Orçamento pago`;
-        mensagem += `Seu orçamento foi pago. Deseja ver agora?`;
+        mensagem = `Seu orçamento foi pago. Deseja ver agora?`;
+        status = 'orcamento-pago';
         break;
     }
 
@@ -548,7 +550,7 @@ export class OrcamentoService {
         tokens,
         titulo,
         mensagem,
-        data,
+        { status, ...data },
       );
   }
 
