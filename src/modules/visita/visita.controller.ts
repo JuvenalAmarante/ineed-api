@@ -15,6 +15,7 @@ import { AuthGuard } from 'src/shared/guards/auth.guard';
 import { FiltroListarVisitaDto } from './dto/filtro-listar-visita.dto';
 import { CadastrarVisitaDto } from './dto/cadastrar-visita.dto';
 import { ConfirmarVisitaDto } from './dto/confirmar-visita.dto';
+import { AvaliarVisitaDto } from './dto/avaliar-visita.dto';
 
 @UseGuards(AuthGuard)
 @Controller('visita')
@@ -58,12 +59,10 @@ export class VisitaController {
 
   @Patch()
   async confirmar(
-    @CurrentUser() usuario: DadosUsuarioLogado,
     @Query('id') visitaId: string,
     @Body() confirmarVisitaDto: ConfirmarVisitaDto,
   ) {
     const dados = await this.visitaService.confirmar(
-      usuario,
       +visitaId,
       confirmarVisitaDto,
     );
@@ -71,6 +70,19 @@ export class VisitaController {
     return {
       message: 'Alteração salva com sucesso',
       visita: dados,
+    };
+  }
+
+  @Patch()
+  async avaliar(
+    @Query('id') visitaId: string,
+    @Body() avaliarVisitaDto: AvaliarVisitaDto,
+  ) {
+    const dados = await this.visitaService.avaliar(+visitaId, avaliarVisitaDto);
+
+    return {
+      message: 'Avaliação concluída',
+      avaliacao: dados,
     };
   }
 }

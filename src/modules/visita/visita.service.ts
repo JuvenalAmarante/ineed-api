@@ -9,6 +9,7 @@ import { PushNotificationService } from 'src/shared/services/push-notification/p
 import { MailService } from 'src/shared/services/mail/mail.service';
 import { SmsService } from 'src/shared/services/sms/sms.service';
 import { ConfirmarVisitaDto } from './dto/confirmar-visita.dto';
+import { AvaliarVisitaDto } from './dto/avaliar-visita.dto';
 
 @Injectable()
 export class VisitaService {
@@ -113,11 +114,7 @@ export class VisitaService {
     return visita;
   }
 
-  async confirmar(
-    usuario: DadosUsuarioLogado,
-    visitaId: number,
-    confirmarVisitaDto: ConfirmarVisitaDto,
-  ) {
+  async confirmar(visitaId: number, confirmarVisitaDto: ConfirmarVisitaDto) {
     if (isNaN(visitaId)) throw new BadRequestException('Visita inválida');
 
     let visita;
@@ -195,6 +192,30 @@ export class VisitaService {
     );
 
     return visita;
+  }
+
+  async avaliar(visitaId: number, avaliarVisitaDto: AvaliarVisitaDto) {
+    if (isNaN(visitaId)) throw new BadRequestException('Visita inválida');
+
+    return this.prisma.$transaction(async (transaction) => {
+      const avaliacao = await transaction.avaliacao.create({
+        data: {
+          nota: avaliarVisitaDto.nota,
+          observacao: avaliarVisitaDto.observacao,
+        },
+      });
+
+      await transaction.visita.update({
+        data: {
+          avaliacaoId: avaliacao.id,
+        },
+        where: {
+          id: visitaId,
+        },
+      });
+
+      return avaliacao;
+    });
   }
 
   private async listarPorId(id: number) {
