@@ -57,6 +57,19 @@ export class VisitaService {
     if (usuario.perfilId != PerfilEnum.FORNECEDOR)
       throw new BadRequestException('Usuário não tem perfil de fornecedor');
 
+    const qtdUsuarios = await this.prisma.usuario.count({
+      where: {
+        id: {
+          in: cadastrarVisitaDto.usuarioColaboradorId,
+        },
+      },
+    });
+
+    if (qtdUsuarios < cadastrarVisitaDto.usuarioColaboradorId.length)
+      throw new BadRequestException(
+        'Os colaboradores selecionados não são válidos',
+      );
+
     visita = await this.prisma.visita.create({
       data: {
         dataCriacao: new Date(),
@@ -98,6 +111,8 @@ export class VisitaService {
 
     return visita;
   }
+
+  // confirmar
 
   private async listarPorId(id: number) {
     const visita = await this.prisma.visita.findFirst({
