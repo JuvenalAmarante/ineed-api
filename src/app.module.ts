@@ -18,6 +18,8 @@ import { CategoriaModule } from './modules/categoria/categoria.module';
 import { ServicoModule } from './modules/servico/servico.module';
 import { TaxaExtraModule } from './modules/taxa-extra/taxa-extra.module';
 import { VisitaModule } from './modules/visita/visita.module';
+import { CartaoModule } from './modules/cartao/cartao.module';
+import { EfiPayModule } from './shared/services/efi-pay/efi-pay.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { VisitaModule } from './modules/visita/visita.module';
     ServicoModule,
     TaxaExtraModule,
     VisitaModule,
+    CartaoModule,
+    EfiPayModule,
   ],
   controllers: [AppController],
   providers: [AppService],

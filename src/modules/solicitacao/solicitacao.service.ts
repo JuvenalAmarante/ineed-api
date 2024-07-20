@@ -186,6 +186,14 @@ export class SolicitacaoService {
         material: true,
         iMovelId: true,
         ativo: true,
+        imagem: true,
+        servicoSolicitacao: {
+          select: {
+            servico: {
+              include: { categoria: true },
+            },
+          },
+        },
       },
       where: {
         id,
@@ -245,12 +253,13 @@ export class SolicitacaoService {
         },
       });
 
-      orcamento['desconto'] = {
-        ativado: descontoData.ativado,
-        cupomId: descontoData.cupomId,
-        desconto: descontoData.taxa,
-        id: descontoData.id,
-      };
+      if (descontoData)
+        orcamento['desconto'] = {
+          ativado: descontoData.ativado,
+          cupomId: descontoData.cupomId,
+          desconto: descontoData.taxa,
+          id: descontoData.id,
+        };
     }
 
     solicitacao['visita'] = visita;
@@ -272,7 +281,17 @@ export class SolicitacaoService {
     switch (usuario.perfilId) {
       case PerfilEnum.CLIENTE:
         return this.prisma.solicitacao.findMany({
-          include,
+          include: {
+            servicoSolicitacao: {
+              select: {
+                servico: {
+                  include: { categoria: true },
+                },
+              },
+            },
+            imagem: true,
+            ...include,
+          },
           where: {
             usuarioId: usuario.id,
             ...where,
@@ -286,7 +305,17 @@ export class SolicitacaoService {
       case PerfilEnum.COLABORADOR:
       case PerfilEnum.FORNECEDOR:
         return this.prisma.solicitacao.findMany({
-          include,
+          include: {
+            servicoSolicitacao: {
+              select: {
+                servico: {
+                  include: { categoria: true },
+                },
+              },
+            },
+            imagem: true,
+            ...include,
+          },
           where,
           orderBy: {
             dataSolicitacao: 'desc',
@@ -298,6 +327,8 @@ export class SolicitacaoService {
   private getFiltros(
     filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
   ): Prisma.SolicitacaoWhereInput {
+    if (!filtroListarSolicitacaoDto.filtrarPor) return undefined;
+
     return {
       id: filtroListarSolicitacaoDto.filtrarPor?.includes('id')
         ? +filtroListarSolicitacaoDto.filtroValor.at(

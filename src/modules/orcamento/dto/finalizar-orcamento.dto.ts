@@ -1,5 +1,12 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateIf,
+} from 'class-validator';
 import { BooleanTransformHelper } from 'src/shared/helpers/boolean.helper';
 
 export class FinalizarOrcamentoDto {
@@ -23,10 +30,20 @@ export class FinalizarOrcamentoDto {
   @IsOptional()
   diarioObra?: string;
 
+  @ValidateIf((obj) => obj.pago)
   @IsInt({
     message: 'O campo cartão é inválido',
   })
-  @IsOptional()
+  @IsNotEmpty({
+    message: 'O campo cartão é obrigatório',
+  })
   @Type(() => Number)
   cartaoId?: number;
+
+  @IsInt({
+    message: 'O campo parcela é inválido',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  parcela?: number;
 }

@@ -20,6 +20,8 @@ import { MetodoPagamentoEnum } from 'src/shared/enums/metodo-pagamento.enum';
 import { PushNotificationService } from 'src/shared/services/push-notification/push-notification.service';
 import { TipoNotificacaoEnum } from './enums/tipo-notificacao.enum';
 import { AvaliarOrcamentoDto } from './dto/avaliar-orcamento.dto';
+import { v4 as uuid } from 'uuid';
+import { EfiPayService } from 'src/shared/services/efi-pay/efi-pay.service';
 
 @Injectable()
 export class OrcamentoService {
@@ -28,6 +30,7 @@ export class OrcamentoService {
     private readonly mailService: MailService,
     private readonly smsService: SmsService,
     private readonly pushNotificationService: PushNotificationService,
+    private readonly efiPayService: EfiPayService,
   ) {}
 
   async listar(
@@ -161,124 +164,146 @@ export class OrcamentoService {
   ) {
     if (isNaN(id)) throw new BadRequestException('Orçamento inválido');
 
-    let requisicao;
-    let orcamento = await this.prisma.orcamento.findUnique({
-      include: {
-        taxasExtras: true,
-      },
-      where: {
-        id,
-      },
-    });
-
-    if (finalizarOrcamentoDto.pago && !finalizarOrcamentoDto.concluida) {
-      let valor = Prisma.Decimal.mul(
-        Prisma.Decimal.sum(orcamento.maoObra, orcamento.material),
-        100,
-      );
-
-      const desconto = await this.prisma.desconto.findFirst({
-        where: {
-          userId: usuarioId,
+    return this.prisma.$transaction(async (transaction) => {
+      let requisicao;
+      let orcamento = await transaction.orcamento.findUnique({
+        include: {
+          taxasExtras: true,
         },
-        orderBy: {
-          taxa: 'desc',
+        where: {
+          id,
         },
       });
 
-      if (desconto) {
-        await this.prisma.desconto.update({
-          data: {
-            ativado: true,
-          },
+      if (finalizarOrcamentoDto.pago && !finalizarOrcamentoDto.concluida) {
+        let valor = Prisma.Decimal.mul(
+          Prisma.Decimal.sum(orcamento.maoObra, orcamento.material),
+          100,
+        );
+
+        const desconto = await transaction.desconto.findFirst({
           where: {
-            id: desconto.id,
+            userId: usuarioId,
+          },
+          orderBy: {
+            taxa: 'desc',
           },
         });
 
-        valor = Prisma.Decimal.sum(valor, desconto.taxa * 100);
+        if (desconto) {
+          await transaction.desconto.update({
+            data: {
+              ativado: true,
+            },
+            where: {
+              id: desconto.id,
+            },
+          });
+
+          valor = Prisma.Decimal.sum(valor, desconto.taxa * 100);
+        }
+
+        const cartao = await transaction.creditCardEfi.findUnique({
+          where: {
+            id: finalizarOrcamentoDto.cartaoId,
+            userId: usuarioId,
+          },
+        });
+
+        if (!cartao) throw new BadRequestException('Cartão não encontrado');
+
+        const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
+          valor: valor.toNumber(),
+          token: cartao.numberMask,
+          usuarioId,
+        });
+
+        const idCobranca = uuid().substring(0, 15);
+
+        requisicao = await transaction.requisicao.create({
+          data: {
+            merchantOrderId: idCobranca,
+            chargeId: requisicaoEfiPay.charge_id,
+            total: requisicaoEfiPay.total,
+            status: requisicaoEfiPay.status,
+            creditCardEfi_Id: cartao.id,
+            cartaoId: cartao.id,
+            parcela: requisicaoEfiPay.installments,
+            usuarioId: usuarioId,
+          },
+        });
       }
 
-      // TODO: Buscar cartao cadastrado
-      const cartao = { id: finalizarOrcamentoDto.cartaoId };
+      const solicitacao = await transaction.solicitacao.findFirst({
+        where: {
+          id,
+        },
+      });
 
-      // TODO: Realizar processamento da venda
-      // const processamento = processarPagamento(usaurio, cartao, valor)
-      console.log(usuarioId, cartao, valor);
+      if (!solicitacao)
+        throw new BadRequestException('Solicitação não encontrada');
 
-      // TODO: Salva requisição de venda
-      requisicao = { id: 1 };
-    }
+      const visita = await transaction.visita.findFirst({
+        where: {
+          solicitacaoId: solicitacao.id,
+        },
+      });
 
-    const solicitacao = await this.prisma.solicitacao.findFirst({
-      where: {
-        id,
-      },
-    });
+      if (requisicao) {
+        orcamento = await transaction.orcamento.update({
+          include: {
+            taxasExtras: true,
+          },
+          data: {
+            requisicaoId: requisicao.id,
+          },
+          where: {
+            id,
+          },
+        });
+      } else {
+        orcamento = await transaction.orcamento.update({
+          include: {
+            taxasExtras: true,
+          },
+          data: {
+            concluido: orcamento.concluido || finalizarOrcamentoDto.concluida,
+            diarioObra: finalizarOrcamentoDto.diarioObra || undefined,
+          },
+          where: {
+            id,
+          },
+        });
+      }
 
-    if (!solicitacao)
-      throw new BadRequestException('Solicitação não encontrada');
+      const valores = [
+        '',
+        'Endereço: ' + solicitacao.endereco,
+        solicitacao.dataInicial.getFullYear() > 1000
+          ? 'Data inicial: ' + solicitacao.dataInicial.toLocaleString('pt-BR')
+          : '',
+        solicitacao.dataSolicitacao.getFullYear() > 1000
+          ? 'Data da solicitação: ' +
+            solicitacao.dataSolicitacao.toLocaleString('pt-BR')
+          : '',
+      ];
 
-    const visita = await this.prisma.visita.findFirst({
-      where: {
+      const data = {
+        visitaId: visita.id,
         solicitacaoId: solicitacao.id,
-      },
+        estimateId: orcamento.id,
+        hasMaterial: solicitacao.material,
+      };
+
+      await this.enviarNotificacao(
+        orcamento.usuarioId,
+        valores,
+        data,
+        TipoNotificacaoEnum.PAGAMENTO,
+      );
+
+      return orcamento;
     });
-
-    if (requisicao) {
-      orcamento = await this.prisma.orcamento.update({
-        include: {
-          taxasExtras: true,
-        },
-        data: {
-          requisicaoId: requisicao.id,
-        },
-        where: {
-          id,
-        },
-      });
-    } else {
-      orcamento = await this.prisma.orcamento.update({
-        include: {
-          taxasExtras: true,
-        },
-        data: {
-          concluido: orcamento.concluido || finalizarOrcamentoDto.concluida,
-          diarioObra: finalizarOrcamentoDto.diarioObra || undefined,
-        },
-        where: {
-          id,
-        },
-      });
-    }
-
-    const valores = [
-      '',
-      'Endereço: ' + solicitacao.endereco,
-      solicitacao.dataInicial.getFullYear() > 1000
-        ? 'Data inicial: ' + solicitacao.dataInicial.toLocaleString('pt-BR')
-        : '',
-      solicitacao.dataSolicitacao.getFullYear() > 1000
-        ? 'Data da solicitação: ' +
-          solicitacao.dataSolicitacao.toLocaleString('pt-BR')
-        : '',
-    ];
-
-    const data = {
-      visitaId: visita.id,
-      solicitacaoId: solicitacao.id,
-      estimateId: orcamento.id,
-      hasMaterial: solicitacao.material,
-    };
-
-    await this.enviarNotificacao(
-      orcamento.usuarioId,
-      valores,
-      data,
-      TipoNotificacaoEnum.PAGAMENTO,
-    );
-
-    return orcamento;
   }
 
   async avaliar(id: number, avaliarOrcamentoDto: AvaliarOrcamentoDto) {
@@ -303,7 +328,7 @@ export class OrcamentoService {
     return avaliacao;
   }
 
-  private async mapear(orcamento: Orcamento) {
+  private mapear(orcamento: Orcamento) {
     return {
       id: orcamento.id,
       usuarioId: orcamento.usuarioId,
