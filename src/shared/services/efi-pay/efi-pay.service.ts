@@ -117,7 +117,7 @@ export class EfiPayService {
                   }
                 : undefined,
           },
-          installments: 1,
+          installments: gerarCobrancaDto.parcela,
           payment_token: gerarCobrancaDto.token,
           billing_address: {
             street: usuario.endereco,

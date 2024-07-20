@@ -60,10 +60,12 @@ export class VisitaController {
   @Patch()
   async confirmar(
     @Query('id') visitaId: string,
+    @CurrentUser() usuario: DadosUsuarioLogado,
     @Body() confirmarVisitaDto: ConfirmarVisitaDto,
   ) {
     const dados = await this.visitaService.confirmar(
       +visitaId,
+      usuario.id,
       confirmarVisitaDto,
     );
 

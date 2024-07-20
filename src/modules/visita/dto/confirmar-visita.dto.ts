@@ -19,6 +19,13 @@ export class ConfirmarVisitaDto {
   @Type(() => Number)
   cartaoId: number;
 
+  @IsInt({
+    message: 'O campo parcela é inválido',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  parcela?: number;
+
   @IsBoolean({
     message: 'O campo concluído é inválido',
   })

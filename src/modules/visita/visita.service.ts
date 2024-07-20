@@ -10,6 +10,8 @@ import { MailService } from 'src/shared/services/mail/mail.service';
 import { SmsService } from 'src/shared/services/sms/sms.service';
 import { ConfirmarVisitaDto } from './dto/confirmar-visita.dto';
 import { AvaliarVisitaDto } from './dto/avaliar-visita.dto';
+import { EfiPayService } from 'src/shared/services/efi-pay/efi-pay.service';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class VisitaService {
@@ -18,6 +20,7 @@ export class VisitaService {
     private readonly mailService: MailService,
     private readonly smsService: SmsService,
     private readonly pushNotificationService: PushNotificationService,
+    private readonly efiPayService: EfiPayService,
   ) {}
 
   async listar(
@@ -114,84 +117,115 @@ export class VisitaService {
     return visita;
   }
 
-  async confirmar(visitaId: number, confirmarVisitaDto: ConfirmarVisitaDto) {
+  async confirmar(
+    visitaId: number,
+    usuarioId: number,
+    confirmarVisitaDto: ConfirmarVisitaDto,
+  ) {
     if (isNaN(visitaId)) throw new BadRequestException('Visita inválida');
 
-    let visita;
-    let solicitacao;
+    return this.prisma.$transaction(async (transaction) => {
+      let visita;
+      let solicitacao;
 
-    if (confirmarVisitaDto.concluida) {
-      visita = await this.prisma.visita.update({
-        data: {
-          concluida: true,
-        },
-        where: {
-          id: visitaId,
-        },
-      });
-
-      solicitacao = await this.prisma.solicitacao.findFirst({
-        where: {
-          id: visita.solicitacaoId,
-        },
-      });
-    } else if (confirmarVisitaDto.pago) {
-      if (confirmarVisitaDto.cartaoId) {
-        // TODO: adicionar cartão
-        const cartao = { id: 1 };
-
-        // TODO: adicionar compra cartao
-        const requisicao = { id: 1, cartaoId: cartao.id };
-
-        visita = await this.prisma.visita.update({
+      if (confirmarVisitaDto.concluida) {
+        visita = await transaction.visita.update({
           data: {
-            pago: true,
-            requisicaoId: requisicao.id,
-          },
-          where: {
-            id: visitaId,
-          },
-        });
-      } else {
-        visita = await this.prisma.visita.update({
-          data: {
-            pago: true,
+            concluida: true,
           },
           where: {
             id: visitaId,
           },
         });
 
-        solicitacao = await this.prisma.solicitacao.findFirst({
+        solicitacao = await transaction.solicitacao.findFirst({
           where: {
             id: visita.solicitacaoId,
           },
         });
+      } else if (confirmarVisitaDto.pago) {
+        if (confirmarVisitaDto.cartaoId) {
+          const cartao = await transaction.creditCardEfi.findFirst({
+            where: {
+              id: confirmarVisitaDto.cartaoId,
+              userId: usuarioId,
+            },
+          });
+
+          if (!cartao) throw new BadRequestException('Cartão não encontrado');
+
+          const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
+            valor: confirmarVisitaDto.valor,
+            parcela: confirmarVisitaDto.parcela || 1,
+            token: cartao.numberMask,
+            usuarioId,
+          });
+
+          const idCobranca = uuid().substring(0, 15);
+
+          const requisicao = await transaction.requisicao.create({
+            data: {
+              merchantOrderId: idCobranca,
+              chargeId: requisicaoEfiPay.charge_id,
+              total: requisicaoEfiPay.total,
+              status: requisicaoEfiPay.status,
+              creditCardEfi_Id: cartao.id,
+              cartaoId: cartao.id,
+              parcela: requisicaoEfiPay.installments,
+              usuarioId: usuarioId,
+            },
+          });
+
+          visita = await transaction.visita.update({
+            data: {
+              pago: true,
+              requisicaoId: requisicao.id,
+            },
+            where: {
+              id: visitaId,
+            },
+          });
+        } else {
+          visita = await transaction.visita.update({
+            data: {
+              pago: true,
+            },
+            where: {
+              id: visitaId,
+            },
+          });
+
+          solicitacao = await transaction.solicitacao.findFirst({
+            where: {
+              id: visita.solicitacaoId,
+            },
+          });
+        }
+      } else {
+        throw new BadRequestException('Dados inválidos');
       }
-    } else {
-      throw new BadRequestException('Dados inválidos');
-    }
 
-    const valores = [
-      `Data da criação: ${visita.dataCriacao.toLocaleString('pt-BR')}`,
-      `Data da visita: ${visita.dataVisita.toLocaleString('pt-BR')}`,
-      `Valor: R$ ${visita.valor.toNumber().toLocaleString('pt-BR')}`,
-    ];
+      const valores = [
+        `Data da criação: ${visita.dataCriacao.toLocaleString('pt-BR')}`,
+        `Data da visita: ${visita.dataVisita.toLocaleString('pt-BR')}`,
+        `Valor: R$ ${visita.valor.toNumber().toLocaleString('pt-BR')}`,
+      ];
 
-    const data = {
-      visitaId: visita.id,
-      solicitacaoId: solicitacao.id,
-      hasMaterial: solicitacao.material,
-    };
+      const data = {
+        visitaId: visita.id,
+        solicitacaoId: solicitacao.id,
+        hasMaterial: solicitacao.material,
+      };
 
-    await this.enviarNotificacao(
-      solicitacao.usuarioId,
-      valores,
-      data,
-      TipoVisitaEnum.CADASTRO,
-    );
+      await this.enviarNotificacao(
+        solicitacao.usuarioId,
+        valores,
+        data,
+        TipoVisitaEnum.CADASTRO,
+      );
 
-    return visita;
+      return visita;
+    });
   }
 
   async avaliar(visitaId: number, avaliarVisitaDto: AvaliarVisitaDto) {

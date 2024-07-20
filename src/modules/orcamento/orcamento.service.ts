@@ -20,8 +20,8 @@ import { MetodoPagamentoEnum } from 'src/shared/enums/metodo-pagamento.enum';
 import { PushNotificationService } from 'src/shared/services/push-notification/push-notification.service';
 import { TipoNotificacaoEnum } from './enums/tipo-notificacao.enum';
 import { AvaliarOrcamentoDto } from './dto/avaliar-orcamento.dto';
-import { v4 as uuid } from 'uuid';
 import { EfiPayService } from 'src/shared/services/efi-pay/efi-pay.service';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class OrcamentoService {
@@ -139,7 +139,7 @@ export class OrcamentoService {
   async confirmar(confirmarOrcamentoDto: ConfirmarOrcamentoDto) {
     await this.validarDadosConfirmar(confirmarOrcamentoDto);
 
-    // TODO: Adicionar pagamento
+    // TODO: Adicionar pagamento boleto
     const transacao = { id: 1 };
 
     const orcamento = await this.prisma.orcamento.update({
@@ -214,6 +214,7 @@ export class OrcamentoService {
 
         const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
           valor: valor.toNumber(),
+          parcela: finalizarOrcamentoDto.parcela || 1,
           token: cartao.numberMask,
           usuarioId,
         });
