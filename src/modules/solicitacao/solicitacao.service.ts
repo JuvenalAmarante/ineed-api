@@ -247,7 +247,7 @@ export class SolicitacaoService {
         avaliacaoId: true,
         transacaoId: true,
         imagem: true,
-        usuarioCollaborador: true,
+        usuarioColaborador: true,
         requisicao: true,
         avaliacao: true,
         solicitacao: true,

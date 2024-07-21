@@ -21,7 +21,7 @@ export class Orcamento {
   avaliacao?: Avaliacao;
   solicitacao?: Solicitacao;
   taxasExtras?: TaxaExtra[];
-  usuarioCollaborador?: UsuarioColaborador[];
+  usuarioColaborador?: UsuarioColaborador[];
 }
 
 class Avaliacao {

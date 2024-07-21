@@ -164,7 +164,7 @@ model Orcamento {
 
   taxasExtras         TaxaExtra[]
   imagem              ImagemOrcamento[]
-  usuarioCollaborador OrcamentoUsuarioColaborador[]
+  usuarioColaborador OrcamentoUsuarioColaborador[]
 
   avaliacao   Avaliacao?  @relation(fields: [avaliacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Orcamento_dbo.Avaliacao_AvaliacaoId")
   transacao   Transacao?  @relation(fields: [transacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Orcamento_dbo.Transacao_TransacaoId")

@@ -73,7 +73,7 @@ export class OrcamentoService {
         material: cadastrarOrcamentoDto.material,
         pago: cadastrarOrcamentoDto.pago,
         solicitacaoId: cadastrarOrcamentoDto.solicitacaoId,
-        usuarioCollaborador: cadastrarOrcamentoDto.usuarioId
+        usuarioColaborador: cadastrarOrcamentoDto.usuarioId
           ? {
               create: {
                 usuarioColaboradorId: cadastrarOrcamentoDto.usuarioId,
@@ -352,7 +352,7 @@ export class OrcamentoService {
       idCliente: orcamento.solicitacao.usuarioId,
       solicitacao: orcamento.solicitacao,
       taxasExtras: orcamento.taxasExtras,
-      usuarioCollaborador: orcamento.usuarioCollaborador?.map(
+      usuarioColaborador: orcamento.usuarioColaborador?.map(
         (item) => item.usuario,
       ),
     };
