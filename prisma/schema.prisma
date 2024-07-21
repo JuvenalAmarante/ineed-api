@@ -359,7 +359,7 @@ model Visita {
   avaliacaoId   Int?     @map("AvaliacaoId")
   transacaoId   Int?     @map("TransacaoId")
 
-  visitaUsuarioColaborador VisitaUsuarioColaborador[]
+  usuarioColaborador VisitaUsuarioColaborador[]
 
   avaliacao   Avaliacao?  @relation(fields: [avaliacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Visita_dbo.Avaliacao_AvaliacaoId")
   transacao   Transacao?  @relation(fields: [transacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Visita_dbo.Transacao_TransacaoId")

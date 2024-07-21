@@ -84,7 +84,7 @@ export class VisitaService {
         solicitacaoId: cadastrarVisitaDto.solicitacaoId,
         pago: cadastrarVisitaDto.pago,
         valor: cadastrarVisitaDto.valor,
-        visitaUsuarioColaborador: {
+        usuarioColaborador: {
           createMany: {
             data: cadastrarVisitaDto.usuarioColaboradorId.map((usuarioId) => ({
               usuarioColaboradorId: usuarioId,
