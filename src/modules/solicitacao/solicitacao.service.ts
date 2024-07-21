@@ -207,7 +207,7 @@ export class SolicitacaoService {
   }
 
   private async listarDados(solicitacao: any) {
-    const visita = await this.prisma.visita.findMany({
+    const visita = await this.prisma.visita.findFirst({
       where: {
         solicitacaoId: solicitacao.id,
       },
