@@ -11,6 +11,7 @@ import { PerfilEnum } from 'src/shared/enums/perfil.enum';
 import { Prisma } from '@prisma/client';
 import { CriarSolicitacaoDto } from './dto/criar-solicitacao.dto';
 import { MailService } from 'src/shared/services/mail/mail.service';
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class SolicitacaoService {
@@ -229,7 +230,7 @@ export class SolicitacaoService {
         },
       });
 
-    const orcamento = await this.prisma.orcamento.findFirst({
+    let orcamento: any = await this.prisma.orcamento.findFirst({
       select: {
         id: true,
         usuarioId: true,
@@ -276,6 +277,13 @@ export class SolicitacaoService {
           desconto: descontoData.taxa,
           id: descontoData.id,
         };
+    } else {
+      orcamento = {
+        id: 0,
+        solicitacaoId: 0,
+        material: new Decimal(0.0),
+        maoObra: new Decimal(0.0),
+      };
     }
 
     solicitacao['visita'] = visita;
