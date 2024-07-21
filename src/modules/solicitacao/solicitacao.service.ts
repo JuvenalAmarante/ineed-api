@@ -213,6 +213,19 @@ export class SolicitacaoService {
         avaliacao: true,
         requisicao: true,
         transacao: true,
+        solicitacao: {
+          include: {
+            servicoSolicitacao: {
+              include: {
+                servico: {
+                  include: {
+                    categoria: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       where: {
         solicitacaoId: solicitacao.id,
