@@ -127,9 +127,28 @@ export class VisitaService {
     return this.prisma.$transaction(async (transaction) => {
       let visita;
       let solicitacao;
+      const include = {
+        avaliacao: true,
+        requisicao: true,
+        transacao: true,
+        solicitacao: {
+          include: {
+            servicoSolicitacao: {
+              include: {
+                servico: {
+                  include: {
+                    categoria: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
 
       if (confirmarVisitaDto.concluida) {
         visita = await transaction.visita.update({
+          include,
           data: {
             concluida: true,
           },
@@ -177,6 +196,7 @@ export class VisitaService {
           });
 
           visita = await transaction.visita.update({
+            include,
             data: {
               pago: true,
               requisicaoId: requisicao.id,
@@ -187,6 +207,7 @@ export class VisitaService {
           });
         } else {
           visita = await transaction.visita.update({
+            include,
             data: {
               pago: true,
             },
@@ -204,6 +225,17 @@ export class VisitaService {
       } else {
         throw new BadRequestException('Dados inválidos');
       }
+
+      if (visita)
+        visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
+          where: {
+            visitaUsuarioColaborador: {
+              some: {
+                visitaId: visita.id,
+              },
+            },
+          },
+        });
 
       const valores = [
         `Data da criação: ${visita.dataCriacao.toLocaleString('pt-BR')}`,
