@@ -13,11 +13,9 @@ export class ConfirmarVisitaDto {
   @IsInt({
     message: 'O campo cartão é inválido',
   })
-  @IsNotEmpty({
-    message: 'O campo cartão é obrigatório',
-  })
+  @IsOptional()
   @Type(() => Number)
-  cartaoId: number;
+  cartaoId?: number;
 
   @IsInt({
     message: 'O campo parcela é inválido',
