@@ -201,6 +201,10 @@ export class SolicitacaoService {
       },
     });
 
+    solicitacao['solicitacoes'] = solicitacao.servicoSolicitacao;
+
+    delete solicitacao.servicoSolicitacao;
+
     if (!solicitacao)
       throw new BadRequestException('Não há solicitações para esse usuário');
 
