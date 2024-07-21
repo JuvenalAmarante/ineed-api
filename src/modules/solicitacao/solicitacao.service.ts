@@ -212,10 +212,19 @@ export class SolicitacaoService {
         avaliacao: true,
         requisicao: true,
         transacao: true,
-        usuarioColaborador: true,
       },
       where: {
         solicitacaoId: solicitacao.id,
+      },
+    });
+
+    visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
+      where: {
+        visitaUsuarioColaborador: {
+          some: {
+            visitaId: visita.id,
+          },
+        },
       },
     });
 
