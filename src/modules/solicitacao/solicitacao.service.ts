@@ -213,7 +213,7 @@ export class SolicitacaoService {
       },
     });
 
-    const orcamento = await this.prisma.orcamento.findMany({
+    const orcamento = await this.prisma.orcamento.findFirst({
       select: {
         id: true,
         usuarioId: true,
