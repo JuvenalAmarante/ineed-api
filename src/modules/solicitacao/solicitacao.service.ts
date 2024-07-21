@@ -218,15 +218,16 @@ export class SolicitacaoService {
       },
     });
 
-    visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
-      where: {
-        visitaUsuarioColaborador: {
-          some: {
-            visitaId: visita.id,
+    if (visita)
+      visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
+        where: {
+          visitaUsuarioColaborador: {
+            some: {
+              visitaId: visita.id,
+            },
           },
         },
-      },
-    });
+      });
 
     const orcamento = await this.prisma.orcamento.findFirst({
       select: {
