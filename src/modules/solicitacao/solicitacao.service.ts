@@ -208,6 +208,10 @@ export class SolicitacaoService {
 
   private async listarDados(solicitacao: any) {
     const visita = await this.prisma.visita.findFirst({
+      include: {
+        avaliacao: true,
+        solicitacao: true,
+      },
       where: {
         solicitacaoId: solicitacao.id,
       },
