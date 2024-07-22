@@ -300,6 +300,8 @@ export class SolicitacaoService {
         solicitacaoId: 0,
         material: new Decimal(0.0),
         maoObra: new Decimal(0.0),
+        pago: false,
+        concluido: false,
       };
     }
 
