@@ -265,7 +265,11 @@ export class SolicitacaoService {
         transacaoId: true,
         imagem: true,
         usuarioColaborador: true,
-        requisicao: true,
+        requisicao: {
+          include: {
+            usuario: true,
+          },
+        },
         avaliacao: true,
         solicitacao: true,
         taxasExtras: true,

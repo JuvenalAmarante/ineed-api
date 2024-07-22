@@ -78,14 +78,22 @@ export class EfiPayService {
       },
     });
 
-    if (
-      !usuario ||
-      ![11, 14].includes(usuario.cpfCnpj.replace(/[^\d]+/g, '').length) ||
-      !usuario.dataAniversario ||
-      !usuario.telefone ||
-      !usuario.email
-    )
+    if (!usuario)
       throw new BadRequestException('Dados de cadastro do usuário inválidos');
+
+    if (
+      !usuario.cpfCnpj ||
+      ![11, 14].includes(usuario.cpfCnpj.replace(/[^\d]+/g, '').length)
+    )
+      throw new BadRequestException('CPF/CNPJ não cadastrado');
+
+    if (!usuario.telefone)
+      throw new BadRequestException('Telefone não cadastrado');
+
+    // if (!usuario.email) throw new BadRequestException('Email não cadastrado');
+
+    // if (!usuario.dataAniversario)
+    //   throw new BadRequestException('Data de nascimento não cadastrado');
 
     const data = {
       items: [
@@ -106,9 +114,9 @@ export class EfiPayService {
               usuario.cpfCnpj.replace(/[^\d]+/g, '').length == 11
                 ? usuario.cpfCnpj.replace(/[^\d]+/g, '')
                 : undefined,
-            email: usuario.email,
+            email: 'wso.silver@gmail.com',
             phone_number: usuario.telefone.replace(/[^\d]+/g, ''),
-            birth: usuario.dataAniversario.toLocaleDateString('en-CA'),
+            birth: '2000-01-01',
             juridical_person:
               usuario.cpfCnpj.replace(/[^\d]+/g, '').length == 14
                 ? {
@@ -141,14 +149,13 @@ export class EfiPayService {
         })
         .subscribe({
           next: (res: AxiosResponse<CobrancaEfiPay, any>) => {
+            console.log(res.data.data.refusal);
             if (!!res.data.data.refusal)
               reject(
                 new BadRequestException(
                   `Ocorreu um erro ao gerar a cobrança: ${res.data.data.refusal.reason}`,
                 ),
               );
-
-            console.log(res.data, !!res.data.data.refusal);
 
             resolve(res.data.data);
           },

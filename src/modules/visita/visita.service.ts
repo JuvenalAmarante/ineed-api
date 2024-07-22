@@ -176,7 +176,7 @@ export class VisitaService {
           const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
             valor: confirmarVisitaDto.valor,
             parcela: confirmarVisitaDto.parcela || 1,
-            token: cartao.numberMask,
+            token: cartao.cardToken,
             usuarioId,
           });
 
@@ -287,7 +287,22 @@ export class VisitaService {
   private async listarPorId(id: number) {
     const visita = await this.prisma.visita.findFirst({
       include: {
-        solicitacao: true,
+        avaliacao: true,
+        requisicao: true,
+        transacao: true,
+        solicitacao: {
+          include: {
+            servicoSolicitacao: {
+              include: {
+                servico: {
+                  include: {
+                    categoria: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       where: {
         id,
@@ -295,6 +310,16 @@ export class VisitaService {
     });
 
     if (!visita) throw new BadRequestException('Visita não encontrada');
+
+    visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
+      where: {
+        visitaUsuarioColaborador: {
+          some: {
+            visitaId: visita.id,
+          },
+        },
+      },
+    });
 
     const solicitacao = await this.prisma.solicitacao.findUnique({
       include: {
@@ -330,7 +355,22 @@ export class VisitaService {
       case PerfilEnum.CLIENTE:
         visitas = await this.prisma.visita.findMany({
           include: {
-            solicitacao: true,
+            avaliacao: true,
+            requisicao: true,
+            transacao: true,
+            solicitacao: {
+              include: {
+                servicoSolicitacao: {
+                  include: {
+                    servico: {
+                      include: {
+                        categoria: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           where: {
             solicitacao: {
@@ -347,7 +387,22 @@ export class VisitaService {
       case PerfilEnum.FORNECEDOR:
         visitas = await this.prisma.visita.findMany({
           include: {
-            solicitacao: true,
+            avaliacao: true,
+            requisicao: true,
+            transacao: true,
+            solicitacao: {
+              include: {
+                servicoSolicitacao: {
+                  include: {
+                    servico: {
+                      include: {
+                        categoria: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           orderBy: {
             dataCriacao: 'desc',
@@ -355,6 +410,18 @@ export class VisitaService {
           skip: paginaAtual > 0 ? (paginaAtual - 1) * totalPaginas : 0,
           take: totalPaginas,
         });
+    }
+
+    for (const visita of visitas) {
+      visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
+        where: {
+          visitaUsuarioColaborador: {
+            some: {
+              visitaId: visita.id,
+            },
+          },
+        },
+      });
     }
 
     if (!visitas.length) throw new BadRequestException('Não há nenhuma visita');

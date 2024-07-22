@@ -131,7 +131,7 @@ export class TaxaExtraService {
       await this.efiPayService.gerarCobranca({
         valor: valorDaTaxa.toNumber(),
         parcela: pagarTaxaExtra.requisicao.parcela,
-        token: cartao.numberMask,
+        token: cartao.cardToken,
         usuarioId: usuario.id,
       });
 

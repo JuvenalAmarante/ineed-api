@@ -212,10 +212,17 @@ export class OrcamentoService {
 
         if (!cartao) throw new BadRequestException('Cartão não encontrado');
 
+        console.log({
+          valor: valor.toNumber(),
+          parcela: finalizarOrcamentoDto.parcela || 1,
+          token: cartao.cardToken,
+          usuarioId,
+        });
+
         const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
           valor: valor.toNumber(),
           parcela: finalizarOrcamentoDto.parcela || 1,
-          token: cartao.numberMask,
+          token: cartao.cardToken,
           usuarioId,
         });
 
@@ -257,6 +264,7 @@ export class OrcamentoService {
           },
           data: {
             requisicaoId: requisicao.id,
+            pago: true,
           },
           where: {
             id,
