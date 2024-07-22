@@ -28,7 +28,6 @@ export class S3Service {
   async upload(file: Express.Multer.File) {
     try {
       const bucket = this.configService.get('AWS_S3_BUCKET_NAME');
-      console.log(path.extname(file.originalname));
       const filename = await this.generateRandomFileName(
         path.extname(file.originalname),
       );

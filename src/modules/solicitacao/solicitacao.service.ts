@@ -316,7 +316,6 @@ export class SolicitacaoService {
     usuario: DadosUsuarioLogado,
     filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
   ) {
-    console.log(filtroListarSolicitacaoDto);
     const include = this.getTabelas(filtroListarSolicitacaoDto);
     const where = this.getFiltros(filtroListarSolicitacaoDto);
 
