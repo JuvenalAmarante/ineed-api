@@ -288,6 +288,7 @@ export class SolicitacaoService {
       });
 
       if (descontoData) orcamento['desconto'] = descontoData.taxa;
+      else orcamento['desconto'] = 0;
     } else {
       orcamento = {
         id: 0,
