@@ -316,6 +316,7 @@ export class SolicitacaoService {
     usuario: DadosUsuarioLogado,
     filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
   ) {
+    console.log(filtroListarSolicitacaoDto);
     const include = this.getTabelas(filtroListarSolicitacaoDto);
     const where = this.getFiltros(filtroListarSolicitacaoDto);
 
@@ -368,7 +369,11 @@ export class SolicitacaoService {
   private getFiltros(
     filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
   ): Prisma.SolicitacaoWhereInput {
-    if (!filtroListarSolicitacaoDto.filtrarPor) return undefined;
+    if (
+      !filtroListarSolicitacaoDto.filtrarPor ||
+      filtroListarSolicitacaoDto.filtrarPor.includes('')
+    )
+      return undefined;
 
     return {
       id: filtroListarSolicitacaoDto.filtrarPor?.includes('id')
