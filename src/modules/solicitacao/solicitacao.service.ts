@@ -287,13 +287,7 @@ export class SolicitacaoService {
         },
       });
 
-      if (descontoData)
-        orcamento['desconto'] = {
-          ativado: descontoData.ativado,
-          cupomId: descontoData.cupomId,
-          desconto: descontoData.taxa,
-          id: descontoData.id,
-        };
+      if (descontoData) orcamento['desconto'] = descontoData.taxa;
     } else {
       orcamento = {
         id: 0,
