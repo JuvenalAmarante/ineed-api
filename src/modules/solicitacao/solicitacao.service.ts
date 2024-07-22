@@ -298,9 +298,12 @@ export class SolicitacaoService {
       orcamento = {
         id: 0,
         solicitacaoId: 0,
+        dataEntrega: '0001-01-01T00:00:00',
+        dataCriacao: '0001-01-01T00:00:00',
         material: new Decimal(0.0),
         maoObra: new Decimal(0.0),
         pago: false,
+        desconto: 0,
         concluido: false,
       };
     }
