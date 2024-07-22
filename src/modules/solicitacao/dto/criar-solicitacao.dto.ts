@@ -17,6 +17,7 @@ export class CriarSolicitacaoDto {
     message: 'O campo data inicial é obrigatório',
   })
   @Type(() => Date)
+  @Transform(({ value }) => new Date(value.toISOString().slice(0, -1)))
   dataInicial: Date;
 
   @IsDate({
@@ -26,6 +27,7 @@ export class CriarSolicitacaoDto {
     message: 'O campo data final é obrigatório',
   })
   @Type(() => Date)
+  @Transform(({ value }) => new Date(value.toISOString().slice(0, -1)))
   dataFinal: Date;
 
   @IsBoolean({

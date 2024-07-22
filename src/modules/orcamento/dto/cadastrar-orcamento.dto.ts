@@ -36,6 +36,7 @@ export class CadastrarOrcamentoDto {
     message: 'O campo data entrega é obrigatório',
   })
   @Type(() => Date)
+  @Transform(({ value }) => new Date(value.toISOString().slice(0, -1)))
   dataEntrega: Date;
 
   @IsString({

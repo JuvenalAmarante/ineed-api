@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDate,
@@ -119,8 +119,9 @@ export class CadastrarUsuarioDto {
   @IsDate({
     message: 'O campo data de aniversário é inválido',
   })
-  @Type(() => Date)
   @IsOptional()
+  @Type(() => Date)
+  @Transform(({ value }) => new Date(value.toISOString().slice(0, -1)))
   dataAniversario?: Date;
 
   @IsBoolean({

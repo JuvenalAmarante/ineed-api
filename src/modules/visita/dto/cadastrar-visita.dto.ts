@@ -28,6 +28,7 @@ export class CadastrarVisitaDto {
     message: 'O campo data visita é obrigatório',
   })
   @Type(() => Date)
+  @Transform(({ value }) => new Date(value.toISOString().slice(0, -1)))
   dataVisita: Date;
 
   @IsNumber(
