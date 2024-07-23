@@ -47,6 +47,25 @@ export class SolicitacaoController {
     return dados;
   }
 
+  @Get('solicitacao')
+  async listar2(
+    @CurrentUser() usuario: DadosUsuarioLogado,
+    @Query() filtroListarSolicitacaoDto: FiltroListarSolicitacaoDto,
+  ) {
+    const dados = await this.solicitacaoService.listar(
+      usuario,
+      filtroListarSolicitacaoDto,
+    );
+
+    if (Array.isArray(dados)) {
+      return {
+        solicit: dados,
+      };
+    }
+
+    return dados;
+  }
+
   @Delete('solicitacao')
   async deletar(
     @CurrentUser() usuario: DadosUsuarioLogado,
