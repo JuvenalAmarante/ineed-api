@@ -215,7 +215,11 @@ export class SolicitacaoService {
     const visita = await this.prisma.visita.findFirst({
       include: {
         avaliacao: true,
-        requisicao: true,
+        requisicao: {
+          include: {
+            usuario: true,
+          },
+        },
         transacao: true,
         solicitacao: {
           include: {

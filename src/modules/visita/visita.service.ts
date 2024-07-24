@@ -126,10 +126,13 @@ export class VisitaService {
 
     return this.prisma.$transaction(async (transaction) => {
       let visita;
-      let solicitacao;
       const include = {
         avaliacao: true,
-        requisicao: true,
+        requisicao: {
+          include: {
+            usuario: true,
+          },
+        },
         transacao: true,
         solicitacao: {
           include: {
@@ -156,26 +159,22 @@ export class VisitaService {
             id: visitaId,
           },
         });
-
-        solicitacao = await transaction.solicitacao.findFirst({
-          where: {
-            id: visita.solicitacaoId,
-          },
-        });
       } else if (confirmarVisitaDto.pago) {
-        if (confirmarVisitaDto.cartaoId) {
+        if (confirmarVisitaDto.valor > 0) {
           const cartao = await transaction.creditCardEfi.findFirst({
             where: {
-              id: confirmarVisitaDto.cartaoId,
               userId: usuarioId,
+            },
+            orderBy: {
+              id: 'desc',
             },
           });
 
           if (!cartao) throw new BadRequestException('Cartão não encontrado');
 
           const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
-            valor: confirmarVisitaDto.valor,
-            parcela: confirmarVisitaDto.parcela || 1,
+            valor: 30000,
+            parcela: 1,
             token: cartao.cardToken,
             usuarioId,
           });
@@ -215,16 +214,16 @@ export class VisitaService {
               id: visitaId,
             },
           });
-
-          solicitacao = await transaction.solicitacao.findFirst({
-            where: {
-              id: visita.solicitacaoId,
-            },
-          });
         }
       } else {
         throw new BadRequestException('Dados inválidos');
       }
+
+      const solicitacao = await transaction.solicitacao.findFirst({
+        where: {
+          id: visita.solicitacaoId,
+        },
+      });
 
       if (visita)
         visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
