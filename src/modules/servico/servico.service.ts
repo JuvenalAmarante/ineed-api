@@ -16,4 +16,15 @@ export class ServicoService {
       },
     });
   }
+
+  async listarTodos() {
+    return this.prisma.servico.findMany({
+      include: {
+        categoria: true,
+      },
+      where: {
+        inativo: false,
+      },
+    });
+  }
 }

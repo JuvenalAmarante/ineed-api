@@ -593,22 +593,47 @@ export class SolicitacaoService {
               ].filter((value) => !!value),
             }
           : undefined,
+        none:
+          filtroListarSolicitacaoDto.filtrarPor?.includes(
+            'exibirSemOrcamento',
+          ) &&
+          ['true', '1'].includes(
+            filtroListarSolicitacaoDto.filtrarValor.at(
+              filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                (value) => value == 'exibirSemOrcamento',
+              ),
+            ),
+          )
+            ? {}
+            : undefined,
       },
       visitas:
         filtroListarSolicitacaoDto.filtrarPor?.includes('status') ||
-        filtroListarSolicitacaoDto.filtrarPor?.includes('exibirSemVisita')
+        filtroListarSolicitacaoDto.filtrarPor?.includes('exibirSemVisita') ||
+        filtroListarSolicitacaoDto.filtrarPor?.includes('exibirSemOrcamento')
           ? {
               some:
-                filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-                +filtroListarSolicitacaoDto.filtrarValor.at(
-                  filtroListarSolicitacaoDto.filtrarPor?.findIndex(
-                    (value) => value == 'status',
+                filtroListarSolicitacaoDto.filtrarPor?.includes(
+                  'exibirSemOrcamento',
+                ) &&
+                ['true', '1'].includes(
+                  filtroListarSolicitacaoDto.filtrarValor.at(
+                    filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                      (value) => value == 'exibirSemOrcamento',
+                    ),
                   ),
-                ) == 2
-                  ? {
-                      pago: false,
-                    }
-                  : undefined,
+                )
+                  ? {}
+                  : filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
+                      +filtroListarSolicitacaoDto.filtrarValor.at(
+                        filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                          (value) => value == 'status',
+                        ),
+                      ) == 2
+                    ? {
+                        pago: false,
+                      }
+                    : undefined,
               none:
                 filtroListarSolicitacaoDto.filtrarPor?.includes(
                   'exibirSemVisita',

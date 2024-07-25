@@ -453,7 +453,7 @@ export class VisitaService {
       });
     }
 
-    if (!visitas.length) throw new BadRequestException('Não há nenhuma visita');
+    // if (!visitas.length) throw new BadRequestException('Não há nenhuma visita');
 
     return visitas;
   }

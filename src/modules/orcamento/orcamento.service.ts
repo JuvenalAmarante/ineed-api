@@ -237,7 +237,7 @@ export class OrcamentoService {
 
         const solicitacao = await transaction.solicitacao.findFirst({
           where: {
-            id,
+            id: orcamento.solicitacaoId,
           },
         });
 
@@ -249,6 +249,8 @@ export class OrcamentoService {
             solicitacaoId: solicitacao.id,
           },
         });
+
+        if (!visita) throw new BadRequestException('Visita não encontrada');
 
         if (requisicao) {
           orcamento = await transaction.orcamento.update({
