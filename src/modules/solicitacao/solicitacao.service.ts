@@ -389,8 +389,6 @@ export class SolicitacaoService {
         });
     }
 
-    console.log(filtroListarSolicitacaoDto, solicitacoes.length);
-
     return solicitacoes.map((solicitacao) => ({
       ...solicitacao,
       nomeCliente: solicitacao.usuario.nome,
@@ -540,73 +538,90 @@ export class SolicitacaoService {
                 ],
               }
             : undefined,
-        some: {
-          OR: [
-            filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-            +filtroListarSolicitacaoDto.filtrarValor.at(
-              filtroListarSolicitacaoDto.filtrarPor?.findIndex(
-                (value) => value == 'status',
-              ),
-            ) == 3
-              ? {
-                  pago: false,
-                  taxasExtras: {
-                    some: {},
-                  },
-                }
-              : null,
-            filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-            +filtroListarSolicitacaoDto.filtrarValor.at(
-              filtroListarSolicitacaoDto.filtrarPor?.findIndex(
-                (value) => value == 'status',
-              ),
-            ) == 4
-              ? {
-                  pago: true,
-                  concluido: false,
-                }
-              : null,
-            filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-            +filtroListarSolicitacaoDto.filtrarValor.at(
-              filtroListarSolicitacaoDto.filtrarPor?.findIndex(
-                (value) => value == 'status',
-              ),
-            ) == 5
-              ? {
-                  pago: true,
-                  concluido: true,
-                  avaliacaoId: null,
-                }
-              : null,
+        some: filtroListarSolicitacaoDto.filtrarPor?.includes('status')
+          ? {
+              OR: [
+                +filtroListarSolicitacaoDto.filtrarValor.at(
+                  filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                    (value) => value == 'status',
+                  ),
+                ) == 3
+                  ? {
+                      pago: false,
+                      taxasExtras: {
+                        some: {},
+                      },
+                    }
+                  : null,
 
-            filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-            +filtroListarSolicitacaoDto.filtrarValor.at(
-              filtroListarSolicitacaoDto.filtrarPor?.findIndex(
-                (value) => value == 'status',
-              ),
-            ) == 6
-              ? {
-                  pago: true,
-                  concluido: true,
-                  avaliacaoId: {
-                    not: null,
-                  },
-                }
-              : null,
-          ].filter((value) => !!value),
-        },
+                +filtroListarSolicitacaoDto.filtrarValor.at(
+                  filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                    (value) => value == 'status',
+                  ),
+                ) == 4
+                  ? {
+                      pago: true,
+                      concluido: false,
+                    }
+                  : null,
+
+                +filtroListarSolicitacaoDto.filtrarValor.at(
+                  filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                    (value) => value == 'status',
+                  ),
+                ) == 5
+                  ? {
+                      pago: true,
+                      concluido: true,
+                      avaliacaoId: null,
+                    }
+                  : null,
+
+                +filtroListarSolicitacaoDto.filtrarValor.at(
+                  filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                    (value) => value == 'status',
+                  ),
+                ) == 6
+                  ? {
+                      pago: true,
+                      concluido: true,
+                      avaliacaoId: {
+                        not: null,
+                      },
+                    }
+                  : null,
+              ].filter((value) => !!value),
+            }
+          : undefined,
       },
       visitas:
-        filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-        +filtroListarSolicitacaoDto.filtrarValor.at(
-          filtroListarSolicitacaoDto.filtrarPor?.findIndex(
-            (value) => value == 'status',
-          ),
-        ) == 2
+        filtroListarSolicitacaoDto.filtrarPor?.includes('status') ||
+        filtroListarSolicitacaoDto.filtrarPor?.includes('exibirSemVisita')
           ? {
-              some: {
-                pago: false,
-              },
+              some:
+                filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
+                +filtroListarSolicitacaoDto.filtrarValor.at(
+                  filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                    (value) => value == 'status',
+                  ),
+                ) == 2
+                  ? {
+                      pago: false,
+                    }
+                  : undefined,
+              none:
+                filtroListarSolicitacaoDto.filtrarPor?.includes(
+                  'exibirSemVisita',
+                ) &&
+                ['true', '1'].includes(
+                  filtroListarSolicitacaoDto.filtrarValor.at(
+                    filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                      (value) => value == 'exibirSemVisita',
+                    ),
+                  ),
+                )
+                  ? {}
+                  : undefined,
             }
           : undefined,
     };
