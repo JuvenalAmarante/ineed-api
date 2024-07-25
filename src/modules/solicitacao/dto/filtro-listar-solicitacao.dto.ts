@@ -36,5 +36,5 @@ export class FiltroListarSolicitacaoDto {
   })
   @Validate(ValidarQuantidade)
   @Transform(({ value }) => value.split(','))
-  filtroValor?: string[];
+  filtrarValor?: string[];
 }

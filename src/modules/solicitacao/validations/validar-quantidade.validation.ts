@@ -7,7 +7,7 @@ import {
 @ValidatorConstraint({ name: 'ValidarQuantidade', async: false })
 export class ValidarQuantidade implements ValidatorConstraintInterface {
   validate(text: string[], args: ValidationArguments) {
-    return text.length == args.object['filtrarPor'].length;
+    return text && text.length == args.object['filtrarPor'].length;
   }
 
   defaultMessage() {

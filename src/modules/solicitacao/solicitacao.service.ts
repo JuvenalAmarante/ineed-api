@@ -180,25 +180,20 @@ export class SolicitacaoService {
 
   private async listarPorId(id: number) {
     const solicitacao = await this.prisma.solicitacao.findUnique({
-      select: {
-        id: true,
-        dataSolicitacao: true,
-        usuarioId: true,
-        usuario: true,
-        dataInicial: true,
-        urgente: true,
-        dataFinal: true,
-        endereco: true,
-        observacao: true,
-        material: true,
-        iMovelId: true,
-        ativo: true,
-        imagem: true,
+      include: {
         servicoSolicitacao: {
           select: {
             servico: {
               include: { categoria: true },
             },
+          },
+        },
+        imagem: true,
+        usuario: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
           },
         },
       },
@@ -318,6 +313,7 @@ export class SolicitacaoService {
     }
 
     solicitacao['visita'] = visita;
+    if (orcamento.id != 0) solicitacao['orcamento'] = orcamento;
 
     return {
       solicitacao,
@@ -333,10 +329,12 @@ export class SolicitacaoService {
     const include = this.getTabelas(filtroListarSolicitacaoDto);
     const where = this.getFiltros(filtroListarSolicitacaoDto);
 
+    let solicitacoes;
     switch (usuario.perfilId) {
       case PerfilEnum.CLIENTE:
-        return this.prisma.solicitacao.findMany({
+        solicitacoes = await this.prisma.solicitacao.findMany({
           include: {
+            ...include,
             servicoSolicitacao: {
               select: {
                 servico: {
@@ -345,11 +343,17 @@ export class SolicitacaoService {
               },
             },
             imagem: true,
-            ...include,
+            usuario: {
+              select: {
+                id: true,
+                nome: true,
+                email: true,
+              },
+            },
           },
           where: {
-            usuarioId: usuario.id,
             ...where,
+            usuarioId: usuario.id,
           },
           orderBy: {
             dataSolicitacao: 'desc',
@@ -359,8 +363,9 @@ export class SolicitacaoService {
       case PerfilEnum.ADMIN:
       case PerfilEnum.COLABORADOR:
       case PerfilEnum.FORNECEDOR:
-        return this.prisma.solicitacao.findMany({
+        solicitacoes = await this.prisma.solicitacao.findMany({
           include: {
+            ...include,
             servicoSolicitacao: {
               select: {
                 servico: {
@@ -369,7 +374,13 @@ export class SolicitacaoService {
               },
             },
             imagem: true,
-            ...include,
+            usuario: {
+              select: {
+                id: true,
+                nome: true,
+                email: true,
+              },
+            },
           },
           where,
           orderBy: {
@@ -377,6 +388,14 @@ export class SolicitacaoService {
           },
         });
     }
+
+    console.log(filtroListarSolicitacaoDto, solicitacoes.length);
+
+    return solicitacoes.map((solicitacao) => ({
+      ...solicitacao,
+      nomeCliente: solicitacao.usuario.nome,
+      emailCliente: solicitacao.usuario.email,
+    }));
   }
 
   private getFiltros(
@@ -384,27 +403,42 @@ export class SolicitacaoService {
   ): Prisma.SolicitacaoWhereInput {
     if (
       !filtroListarSolicitacaoDto.filtrarPor ||
+      !filtroListarSolicitacaoDto.filtrarPor.length ||
       filtroListarSolicitacaoDto.filtrarPor.includes('')
     )
-      return undefined;
+      return {
+        orcamentos: {
+          every: {
+            OR: [
+              {
+                concluido: false,
+              },
+              {
+                avaliacaoId: null,
+              },
+            ],
+          },
+        },
+        ativo: true,
+      };
 
     return {
       id: filtroListarSolicitacaoDto.filtrarPor?.includes('id')
-        ? +filtroListarSolicitacaoDto.filtroValor.at(
+        ? +filtroListarSolicitacaoDto.filtrarValor.at(
             filtroListarSolicitacaoDto.filtrarPor?.findIndex(
               (value) => value == 'id',
             ),
           )
         : undefined,
       endereco: filtroListarSolicitacaoDto.filtrarPor?.includes('endereco')
-        ? filtroListarSolicitacaoDto.filtroValor.at(
+        ? filtroListarSolicitacaoDto.filtrarValor.at(
             filtroListarSolicitacaoDto.filtrarPor?.findIndex(
               (value) => value == 'endereco',
             ),
           )
         : undefined,
       dataFinal: filtroListarSolicitacaoDto.filtrarPor?.includes('dataFinal')
-        ? filtroListarSolicitacaoDto.filtroValor.at(
+        ? filtroListarSolicitacaoDto.filtrarValor.at(
             filtroListarSolicitacaoDto.filtrarPor?.findIndex(
               (value) => value == 'dataFinal',
             ),
@@ -419,7 +453,7 @@ export class SolicitacaoService {
                   'categoriaId',
                 )
                   ? {
-                      categoriaId: +filtroListarSolicitacaoDto.filtroValor.at(
+                      categoriaId: +filtroListarSolicitacaoDto.filtrarValor.at(
                         filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                           (value) => value == 'categoriaId',
                         ),
@@ -429,7 +463,7 @@ export class SolicitacaoService {
                 servicoId: filtroListarSolicitacaoDto.filtrarPor?.includes(
                   'servicoId',
                 )
-                  ? +filtroListarSolicitacaoDto.filtroValor.at(
+                  ? +filtroListarSolicitacaoDto.filtrarValor.at(
                       filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                         (value) => value == 'servicoId',
                       ),
@@ -439,33 +473,37 @@ export class SolicitacaoService {
             }
           : undefined,
       usuario:
-        filtroListarSolicitacaoDto.filtrarPor?.includes('emailCliente') &&
+        filtroListarSolicitacaoDto.filtrarPor?.includes('emailCliente') ||
         filtroListarSolicitacaoDto.filtrarPor?.includes('nomeCliente')
           ? {
               nome: filtroListarSolicitacaoDto.filtrarPor?.includes(
                 'nomeCliente',
               )
-                ? filtroListarSolicitacaoDto.filtroValor.at(
-                    filtroListarSolicitacaoDto.filtrarPor?.findIndex(
-                      (value) => value == 'nomeCliente',
+                ? {
+                    contains: filtroListarSolicitacaoDto.filtrarValor.at(
+                      filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                        (value) => value == 'nomeCliente',
+                      ),
                     ),
-                  )
+                  }
                 : undefined,
               email: filtroListarSolicitacaoDto.filtrarPor?.includes(
                 'emailCliente',
               )
-                ? filtroListarSolicitacaoDto.filtroValor.at(
-                    filtroListarSolicitacaoDto.filtrarPor?.findIndex(
-                      (value) => value == 'emailCliente',
+                ? {
+                    contains: filtroListarSolicitacaoDto.filtrarValor.at(
+                      filtroListarSolicitacaoDto.filtrarPor?.findIndex(
+                        (value) => value == 'emailCliente',
+                      ),
                     ),
-                  )
+                  }
                 : undefined,
             }
           : undefined,
       ativo:
         (filtroListarSolicitacaoDto.filtrarPor?.includes('exibirCancelados') &&
           ['false', '0'].includes(
-            filtroListarSolicitacaoDto.filtroValor.at(
+            filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'exibirCancelados',
               ),
@@ -473,7 +511,7 @@ export class SolicitacaoService {
           )) ||
         (filtroListarSolicitacaoDto.filtrarPor?.includes('ativo') &&
           ['true', '1'].includes(
-            filtroListarSolicitacaoDto.filtroValor.at(
+            filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'ativo',
               ),
@@ -485,7 +523,7 @@ export class SolicitacaoService {
         every:
           filtroListarSolicitacaoDto.filtrarPor?.includes('exibirConcluidos') &&
           ['false', '0'].includes(
-            filtroListarSolicitacaoDto.filtroValor.at(
+            filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'exibirConcluidos',
               ),
@@ -505,7 +543,7 @@ export class SolicitacaoService {
         some: {
           OR: [
             filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-            +filtroListarSolicitacaoDto.filtroValor.at(
+            +filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'status',
               ),
@@ -518,7 +556,7 @@ export class SolicitacaoService {
                 }
               : null,
             filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-            +filtroListarSolicitacaoDto.filtroValor.at(
+            +filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'status',
               ),
@@ -529,7 +567,7 @@ export class SolicitacaoService {
                 }
               : null,
             filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-            +filtroListarSolicitacaoDto.filtroValor.at(
+            +filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'status',
               ),
@@ -542,7 +580,7 @@ export class SolicitacaoService {
               : null,
 
             filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-            +filtroListarSolicitacaoDto.filtroValor.at(
+            +filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'status',
               ),
@@ -560,7 +598,7 @@ export class SolicitacaoService {
       },
       visitas:
         filtroListarSolicitacaoDto.filtrarPor?.includes('status') &&
-        +filtroListarSolicitacaoDto.filtroValor.at(
+        +filtroListarSolicitacaoDto.filtrarValor.at(
           filtroListarSolicitacaoDto.filtrarPor?.findIndex(
             (value) => value == 'status',
           ),
@@ -578,14 +616,14 @@ export class SolicitacaoService {
     return filtroListarSolicitacaoDto?.filtrarPor?.includes('status')
       ? {
           orcamentos: [3, 4, 5, 6].includes(
-            +filtroListarSolicitacaoDto.filtroValor.at(
+            +filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'status',
               ),
             ),
           ),
           visitas: [1, 2].includes(
-            +filtroListarSolicitacaoDto.filtroValor.at(
+            +filtroListarSolicitacaoDto.filtrarValor.at(
               filtroListarSolicitacaoDto.filtrarPor?.findIndex(
                 (value) => value == 'status',
               ),
