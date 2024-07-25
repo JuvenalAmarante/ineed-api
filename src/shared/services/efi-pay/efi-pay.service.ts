@@ -95,12 +95,17 @@ export class EfiPayService {
     // if (!usuario.dataAniversario)
     //   throw new BadRequestException('Data de nascimento não cadastrado');
 
+    if (gerarCobrancaDto.valor < 3)
+      throw new BadRequestException(
+        'O valor da cobrança deve ser no mínimo R$ 3,00',
+      );
+
     const data = {
       items: [
         {
           name: 'FixIt: Prestação de serviço',
           amount: 1,
-          value: gerarCobrancaDto.valor,
+          value: gerarCobrancaDto.valor * 100,
         },
       ],
       payment: {
@@ -149,7 +154,6 @@ export class EfiPayService {
         })
         .subscribe({
           next: (res: AxiosResponse<CobrancaEfiPay, any>) => {
-            console.log(res.data.data.refusal);
             if (!!res.data.data.refusal)
               reject(
                 new BadRequestException(
@@ -159,13 +163,7 @@ export class EfiPayService {
 
             resolve(res.data.data);
           },
-          error: (res) => {
-            console.error(
-              'Ocorreu um erro ao gerar a cobrança',
-              res.response.data,
-              credenciais.access_token,
-            );
-
+          error: () => {
             reject(
               new BadRequestException('Ocorreu um erro ao gerar a cobrança'),
             );

@@ -179,10 +179,7 @@ export class OrcamentoService {
         if (!orcamento) throw new BadRequestException('Orçamento inválido');
 
         if (finalizarOrcamentoDto.pago && !finalizarOrcamentoDto.concluida) {
-          let valor = Prisma.Decimal.mul(
-            Prisma.Decimal.sum(orcamento.maoObra, orcamento.material),
-            100,
-          );
+          let valor = Prisma.Decimal.sum(orcamento.maoObra, orcamento.material);
 
           const desconto = await transaction.desconto.findFirst({
             where: {
@@ -203,7 +200,7 @@ export class OrcamentoService {
               },
             });
 
-            valor = Prisma.Decimal.sum(valor, desconto.taxa * 100);
+            valor = Prisma.Decimal.sum(valor, desconto.taxa);
           }
 
           const cartao = await transaction.creditCardEfi.findUnique({

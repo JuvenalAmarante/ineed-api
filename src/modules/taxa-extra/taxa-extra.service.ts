@@ -5,7 +5,6 @@ import { PrismaService } from 'src/shared/services/prisma/prisma.service';
 import { PushNotificationService } from 'src/shared/services/push-notification/push-notification.service';
 import { PerfilEnum } from 'src/shared/enums/perfil.enum';
 import { PagarTaxaExtra } from './dto/pagar-taxa-extra.dto';
-import { Decimal } from '@prisma/client/runtime/library';
 import { TipoTaxaExtraEnum } from './enums/tipo-taxa-extra.enum';
 import { EfiPayService } from 'src/shared/services/efi-pay/efi-pay.service';
 
@@ -128,10 +127,8 @@ export class TaxaExtraService {
 
         if (!cartao) throw new BadRequestException('Cartão não encontrado');
 
-        const valorDaTaxa = Decimal.mul(taxaExtra.valor, 100);
-
         await this.efiPayService.gerarCobranca({
-          valor: valorDaTaxa.toNumber(),
+          valor: taxaExtra.valor.toNumber(),
           parcela: pagarTaxaExtra.requisicao.parcela,
           token: cartao.cardToken,
           usuarioId: usuario.id,

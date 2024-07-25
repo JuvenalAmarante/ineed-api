@@ -174,7 +174,7 @@ export class VisitaService {
             if (!cartao) throw new BadRequestException('Cartão não encontrado');
 
             const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
-              valor: confirmarVisitaDto.valor * 100,
+              valor: confirmarVisitaDto.valor,
               parcela: 1,
               token: cartao.cardToken,
               usuarioId,
