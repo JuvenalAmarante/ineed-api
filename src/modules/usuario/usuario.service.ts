@@ -210,4 +210,30 @@ export class UsuarioService {
 
     return listaUsuarios;
   }
+
+  async deletar(id: number) {
+    if (isNaN(id)) throw new BadRequestException('Usuário não encontrado');
+
+    const usuario = await this.prisma.usuario.update({
+      data: {
+        cpfCnpj: null,
+        inativo: true,
+      },
+      where: {
+        id,
+      },
+    });
+
+    if (!usuario) throw new BadRequestException('Usuário não encontrado');
+
+    return this.prisma.usuario.update({
+      data: {
+        cpfCnpj: null,
+        inativo: true,
+      },
+      where: {
+        id,
+      },
+    });
+  }
 }

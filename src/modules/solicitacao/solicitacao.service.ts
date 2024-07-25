@@ -100,58 +100,64 @@ export class SolicitacaoService {
     criarSolicitacaoDto: CriarSolicitacaoDto,
     files: Array<Express.Multer.File>,
   ) {
-    const solicitacao = await this.prisma.$transaction(async (transaction) => {
-      let solicitacao = await transaction.solicitacao.findFirst({
-        where: {
-          usuarioId,
-          dataInicial: criarSolicitacaoDto.dataInicial,
-          urgente: criarSolicitacaoDto.urgente,
-          dataFinal: criarSolicitacaoDto.dataFinal,
-          endereco: criarSolicitacaoDto.endereco,
-          observacao: criarSolicitacaoDto.observacao,
-          material: criarSolicitacaoDto.material,
-          iMovelId: criarSolicitacaoDto.imovelId,
-        },
-      });
-
-      if (solicitacao)
-        throw new BadRequestException('Solicitação já cadastrada');
-
-      solicitacao = await transaction.solicitacao.create({
-        data: {
-          dataSolicitacao: new Date(),
-          usuarioId,
-          dataInicial: criarSolicitacaoDto.dataInicial,
-          urgente: criarSolicitacaoDto.urgente,
-          dataFinal: criarSolicitacaoDto.dataFinal,
-          endereco: criarSolicitacaoDto.endereco,
-          observacao: criarSolicitacaoDto.observacao,
-          material: criarSolicitacaoDto.material,
-          iMovelId: criarSolicitacaoDto.imovelId,
-          ativo: true,
-          servicoSolicitacao: {
-            createMany: {
-              data: criarSolicitacaoDto.servicoId.map((servicoId) => ({
-                servicoId,
-              })),
-            },
-          },
-        },
-      });
-
-      for (const file in files) {
-        const url = await this.s3Service.upload(files[file]);
-
-        await transaction.imagemSolicitacao.create({
-          data: {
-            solicitacaoId: solicitacao.id,
-            valor: url,
+    const solicitacao = await this.prisma.$transaction(
+      async (transaction) => {
+        let solicitacao = await transaction.solicitacao.findFirst({
+          where: {
+            usuarioId,
+            dataInicial: criarSolicitacaoDto.dataInicial,
+            urgente: criarSolicitacaoDto.urgente,
+            dataFinal: criarSolicitacaoDto.dataFinal,
+            endereco: criarSolicitacaoDto.endereco,
+            observacao: criarSolicitacaoDto.observacao,
+            material: criarSolicitacaoDto.material,
+            iMovelId: criarSolicitacaoDto.imovelId,
           },
         });
-      }
 
-      return solicitacao;
-    });
+        if (solicitacao)
+          throw new BadRequestException('Solicitação já cadastrada');
+
+        solicitacao = await transaction.solicitacao.create({
+          data: {
+            dataSolicitacao: new Date(),
+            usuarioId,
+            dataInicial: criarSolicitacaoDto.dataInicial,
+            urgente: criarSolicitacaoDto.urgente,
+            dataFinal: criarSolicitacaoDto.dataFinal,
+            endereco: criarSolicitacaoDto.endereco,
+            observacao: criarSolicitacaoDto.observacao,
+            material: criarSolicitacaoDto.material,
+            iMovelId: criarSolicitacaoDto.imovelId,
+            ativo: true,
+            servicoSolicitacao: {
+              createMany: {
+                data: criarSolicitacaoDto.servicoId.map((servicoId) => ({
+                  servicoId,
+                })),
+              },
+            },
+          },
+        });
+
+        for (const file in files) {
+          const url = await this.s3Service.upload(files[file]);
+
+          await transaction.imagemSolicitacao.create({
+            data: {
+              solicitacaoId: solicitacao.id,
+              valor: url,
+            },
+          });
+        }
+
+        return solicitacao;
+      },
+      {
+        maxWait: 5000,
+        timeout: 10000,
+      },
+    );
 
     const valores = [
       solicitacao.urgente ? 'Solicitação de extrema urgência!' : '',

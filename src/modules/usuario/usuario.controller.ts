@@ -7,6 +7,7 @@ import {
   Post,
   Put,
   Query,
+  Delete,
 } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { AuthGuard } from 'src/shared/guards/auth.guard';
@@ -105,6 +106,15 @@ export class UsuarioController {
 
     return {
       usuario: data,
+    };
+  }
+
+  @Delete()
+  async deletar(@Query('id') id: string) {
+    await this.usuarioService.deletar(+id);
+
+    return {
+      message: 'Usuário deletado',
     };
   }
 }

@@ -84,80 +84,87 @@ export class TaxaExtraService {
   }
 
   async pagar(usuario: DadosUsuarioLogado, pagarTaxaExtra: PagarTaxaExtra) {
-    return this.prisma.$transaction(async (transaction) => {
-      let taxaExtra = await transaction.taxaExtra.findUnique({
-        where: {
-          id: pagarTaxaExtra.id,
-        },
-      });
+    return this.prisma.$transaction(
+      async (transaction) => {
+        let taxaExtra = await transaction.taxaExtra.findUnique({
+          where: {
+            id: pagarTaxaExtra.id,
+          },
+        });
 
-      if (taxaExtra.pago) throw new BadRequestException('A taxa já foi paga');
+        if (taxaExtra.pago) throw new BadRequestException('A taxa já foi paga');
 
-      const orcamento = await transaction.orcamento.findUnique({
-        where: {
-          id: taxaExtra.orcamentoId,
-        },
-      });
+        const orcamento = await transaction.orcamento.findUnique({
+          where: {
+            id: taxaExtra.orcamentoId,
+          },
+        });
 
-      if (!orcamento) throw new BadRequestException('Orçamento não encontrado');
+        if (!orcamento)
+          throw new BadRequestException('Orçamento não encontrado');
 
-      const solicitacao = await transaction.solicitacao.findUnique({
-        where: {
-          id: orcamento.solicitacaoId,
-        },
-      });
+        const solicitacao = await transaction.solicitacao.findUnique({
+          where: {
+            id: orcamento.solicitacaoId,
+          },
+        });
 
-      if (usuario.perfilId != PerfilEnum.CLIENTE)
-        throw new BadRequestException(
-          'Você não é um cliente para pagar uma taxa extra',
+        if (usuario.perfilId != PerfilEnum.CLIENTE)
+          throw new BadRequestException(
+            'Você não é um cliente para pagar uma taxa extra',
+          );
+
+        if (usuario.id != solicitacao.usuarioId)
+          throw new BadRequestException(
+            'Usuário sem permissão para concluir pagamento',
+          );
+
+        const cartao = await transaction.creditCardEfi.findFirst({
+          where: {
+            id: pagarTaxaExtra.requisicao.cartaoId,
+            userId: usuario.id,
+          },
+        });
+
+        if (!cartao) throw new BadRequestException('Cartão não encontrado');
+
+        const valorDaTaxa = Decimal.mul(taxaExtra.valor, 100);
+
+        await this.efiPayService.gerarCobranca({
+          valor: valorDaTaxa.toNumber(),
+          parcela: pagarTaxaExtra.requisicao.parcela,
+          token: cartao.cardToken,
+          usuarioId: usuario.id,
+        });
+
+        taxaExtra = await transaction.taxaExtra.update({
+          data: {
+            pago: true,
+          },
+          where: {
+            id: pagarTaxaExtra.id,
+          },
+        });
+
+        const data = {
+          status: 'orcamento-taxa-extra',
+          solicitacaoId: orcamento.solicitacaoId,
+          valor: taxaExtra.valor.toNumber().toLocaleString('pt-BR'),
+        };
+
+        await this.enviarNotificacaoPush(
+          solicitacao.usuarioId,
+          data,
+          TipoTaxaExtraEnum.PAGAMENTO,
         );
 
-      if (usuario.id != solicitacao.usuarioId)
-        throw new BadRequestException(
-          'Usuário sem permissão para concluir pagamento',
-        );
-
-      const cartao = await transaction.creditCardEfi.findFirst({
-        where: {
-          id: pagarTaxaExtra.requisicao.cartaoId,
-          userId: usuario.id,
-        },
-      });
-
-      if (!cartao) throw new BadRequestException('Cartão não encontrado');
-
-      const valorDaTaxa = Decimal.mul(taxaExtra.valor, 100);
-
-      await this.efiPayService.gerarCobranca({
-        valor: valorDaTaxa.toNumber(),
-        parcela: pagarTaxaExtra.requisicao.parcela,
-        token: cartao.cardToken,
-        usuarioId: usuario.id,
-      });
-
-      taxaExtra = await transaction.taxaExtra.update({
-        data: {
-          pago: true,
-        },
-        where: {
-          id: pagarTaxaExtra.id,
-        },
-      });
-
-      const data = {
-        status: 'orcamento-taxa-extra',
-        solicitacaoId: orcamento.solicitacaoId,
-        valor: taxaExtra.valor.toNumber().toLocaleString('pt-BR'),
-      };
-
-      await this.enviarNotificacaoPush(
-        solicitacao.usuarioId,
-        data,
-        TipoTaxaExtraEnum.PAGAMENTO,
-      );
-
-      return taxaExtra;
-    });
+        return taxaExtra;
+      },
+      {
+        maxWait: 5000,
+        timeout: 10000,
+      },
+    );
   }
 
   private async enviarNotificacaoPush(

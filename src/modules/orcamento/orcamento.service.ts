@@ -164,155 +164,156 @@ export class OrcamentoService {
   ) {
     if (isNaN(id)) throw new BadRequestException('Orçamento inválido');
 
-    return this.prisma.$transaction(async (transaction) => {
-      let requisicao;
-      let orcamento = await transaction.orcamento.findUnique({
-        include: {
-          taxasExtras: true,
-        },
-        where: {
-          id,
-        },
-      });
-
-      if (finalizarOrcamentoDto.pago && !finalizarOrcamentoDto.concluida) {
-        let valor = Prisma.Decimal.mul(
-          Prisma.Decimal.sum(orcamento.maoObra, orcamento.material),
-          100,
-        );
-
-        const desconto = await transaction.desconto.findFirst({
-          where: {
-            userId: usuarioId,
+    return this.prisma.$transaction(
+      async (transaction) => {
+        let requisicao;
+        let orcamento = await transaction.orcamento.findUnique({
+          include: {
+            taxasExtras: true,
           },
-          orderBy: {
-            taxa: 'desc',
+          where: {
+            id,
           },
         });
 
-        if (desconto) {
-          await transaction.desconto.update({
-            data: {
-              ativado: true,
-            },
+        if (!orcamento) throw new BadRequestException('Orçamento inválido');
+
+        if (finalizarOrcamentoDto.pago && !finalizarOrcamentoDto.concluida) {
+          let valor = Prisma.Decimal.mul(
+            Prisma.Decimal.sum(orcamento.maoObra, orcamento.material),
+            100,
+          );
+
+          const desconto = await transaction.desconto.findFirst({
             where: {
-              id: desconto.id,
+              userId: usuarioId,
+            },
+            orderBy: {
+              taxa: 'desc',
             },
           });
 
-          valor = Prisma.Decimal.sum(valor, desconto.taxa * 100);
+          if (desconto) {
+            await transaction.desconto.update({
+              data: {
+                ativado: true,
+              },
+              where: {
+                id: desconto.id,
+              },
+            });
+
+            valor = Prisma.Decimal.sum(valor, desconto.taxa * 100);
+          }
+
+          const cartao = await transaction.creditCardEfi.findUnique({
+            where: {
+              id: finalizarOrcamentoDto.cartaoId,
+              userId: usuarioId,
+            },
+          });
+
+          if (!cartao) throw new BadRequestException('Cartão não encontrado');
+
+          const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
+            valor: valor.toNumber(),
+            parcela: finalizarOrcamentoDto.parcela || 1,
+            token: cartao.cardToken,
+            usuarioId,
+          });
+
+          const idCobranca = uuid().substring(0, 15);
+
+          requisicao = await transaction.requisicao.create({
+            data: {
+              merchantOrderId: idCobranca,
+              chargeId: requisicaoEfiPay.charge_id,
+              total: requisicaoEfiPay.total,
+              status: requisicaoEfiPay.status,
+              creditCardEfi_Id: cartao.id,
+              cartaoId: cartao.id,
+              parcela: requisicaoEfiPay.installments,
+              usuarioId: usuarioId,
+            },
+          });
         }
 
-        const cartao = await transaction.creditCardEfi.findUnique({
+        const solicitacao = await transaction.solicitacao.findFirst({
           where: {
-            id: finalizarOrcamentoDto.cartaoId,
-            userId: usuarioId,
+            id,
           },
         });
 
-        if (!cartao) throw new BadRequestException('Cartão não encontrado');
+        if (!solicitacao)
+          throw new BadRequestException('Solicitação não encontrada');
 
-        console.log({
-          valor: valor.toNumber(),
-          parcela: finalizarOrcamentoDto.parcela || 1,
-          token: cartao.cardToken,
-          usuarioId,
-        });
-
-        const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
-          valor: valor.toNumber(),
-          parcela: finalizarOrcamentoDto.parcela || 1,
-          token: cartao.cardToken,
-          usuarioId,
-        });
-
-        const idCobranca = uuid().substring(0, 15);
-
-        requisicao = await transaction.requisicao.create({
-          data: {
-            merchantOrderId: idCobranca,
-            chargeId: requisicaoEfiPay.charge_id,
-            total: requisicaoEfiPay.total,
-            status: requisicaoEfiPay.status,
-            creditCardEfi_Id: cartao.id,
-            cartaoId: cartao.id,
-            parcela: requisicaoEfiPay.installments,
-            usuarioId: usuarioId,
+        const visita = await transaction.visita.findFirst({
+          where: {
+            solicitacaoId: solicitacao.id,
           },
         });
-      }
 
-      const solicitacao = await transaction.solicitacao.findFirst({
-        where: {
-          id,
-        },
-      });
+        if (requisicao) {
+          orcamento = await transaction.orcamento.update({
+            include: {
+              taxasExtras: true,
+            },
+            data: {
+              requisicaoId: requisicao.id,
+              pago: true,
+            },
+            where: {
+              id,
+            },
+          });
+        } else {
+          orcamento = await transaction.orcamento.update({
+            include: {
+              taxasExtras: true,
+            },
+            data: {
+              concluido: orcamento.concluido || finalizarOrcamentoDto.concluida,
+              diarioObra: finalizarOrcamentoDto.diarioObra || undefined,
+            },
+            where: {
+              id,
+            },
+          });
+        }
 
-      if (!solicitacao)
-        throw new BadRequestException('Solicitação não encontrada');
+        const valores = [
+          '',
+          'Endereço: ' + solicitacao.endereco,
+          solicitacao.dataInicial.getFullYear() > 1000
+            ? 'Data inicial: ' + solicitacao.dataInicial.toLocaleString('pt-BR')
+            : '',
+          solicitacao.dataSolicitacao.getFullYear() > 1000
+            ? 'Data da solicitação: ' +
+              solicitacao.dataSolicitacao.toLocaleString('pt-BR')
+            : '',
+        ];
 
-      const visita = await transaction.visita.findFirst({
-        where: {
+        const data = {
+          visitaId: visita.id,
           solicitacaoId: solicitacao.id,
-        },
-      });
+          estimateId: orcamento.id,
+          hasMaterial: solicitacao.material,
+        };
 
-      if (requisicao) {
-        orcamento = await transaction.orcamento.update({
-          include: {
-            taxasExtras: true,
-          },
-          data: {
-            requisicaoId: requisicao.id,
-            pago: true,
-          },
-          where: {
-            id,
-          },
-        });
-      } else {
-        orcamento = await transaction.orcamento.update({
-          include: {
-            taxasExtras: true,
-          },
-          data: {
-            concluido: orcamento.concluido || finalizarOrcamentoDto.concluida,
-            diarioObra: finalizarOrcamentoDto.diarioObra || undefined,
-          },
-          where: {
-            id,
-          },
-        });
-      }
+        await this.enviarNotificacao(
+          orcamento.usuarioId,
+          valores,
+          data,
+          TipoNotificacaoEnum.PAGAMENTO,
+        );
 
-      const valores = [
-        '',
-        'Endereço: ' + solicitacao.endereco,
-        solicitacao.dataInicial.getFullYear() > 1000
-          ? 'Data inicial: ' + solicitacao.dataInicial.toLocaleString('pt-BR')
-          : '',
-        solicitacao.dataSolicitacao.getFullYear() > 1000
-          ? 'Data da solicitação: ' +
-            solicitacao.dataSolicitacao.toLocaleString('pt-BR')
-          : '',
-      ];
-
-      const data = {
-        visitaId: visita.id,
-        solicitacaoId: solicitacao.id,
-        estimateId: orcamento.id,
-        hasMaterial: solicitacao.material,
-      };
-
-      await this.enviarNotificacao(
-        orcamento.usuarioId,
-        valores,
-        data,
-        TipoNotificacaoEnum.PAGAMENTO,
-      );
-
-      return orcamento;
-    });
+        return orcamento;
+      },
+      {
+        maxWait: 5000,
+        timeout: 10000,
+      },
+    );
   }
 
   async avaliar(id: number, avaliarOrcamentoDto: AvaliarOrcamentoDto) {

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Patch,
@@ -85,6 +86,15 @@ export class VisitaController {
     return {
       message: 'Avaliação concluída',
       avaliacao: dados,
+    };
+  }
+
+  @Delete()
+  async deletar(@Query('id') visitaId: string) {
+    await this.visitaService.deletar(+visitaId);
+
+    return {
+      message: 'Visita deletada',
     };
   }
 }

@@ -124,162 +124,192 @@ export class VisitaService {
   ) {
     if (isNaN(visitaId)) throw new BadRequestException('Visita inválida');
 
-    return this.prisma.$transaction(async (transaction) => {
-      let visita;
-      const include = {
-        avaliacao: true,
-        requisicao: {
-          include: {
-            usuario: true,
+    return this.prisma.$transaction(
+      async (transaction) => {
+        let visita;
+        const include = {
+          avaliacao: true,
+          requisicao: {
+            include: {
+              usuario: true,
+            },
           },
-        },
-        transacao: true,
-        solicitacao: {
-          include: {
-            servicoSolicitacao: {
-              include: {
-                servico: {
-                  include: {
-                    categoria: true,
+          transacao: true,
+          solicitacao: {
+            include: {
+              servicoSolicitacao: {
+                include: {
+                  servico: {
+                    include: {
+                      categoria: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-      };
+        };
 
-      if (confirmarVisitaDto.concluida) {
-        visita = await transaction.visita.update({
-          include,
-          data: {
-            concluida: true,
-          },
+        if (confirmarVisitaDto.concluida) {
+          visita = await transaction.visita.update({
+            include,
+            data: {
+              concluida: true,
+            },
+            where: {
+              id: visitaId,
+            },
+          });
+        } else if (confirmarVisitaDto.pago) {
+          if (confirmarVisitaDto.valor > 0) {
+            const cartao = await transaction.creditCardEfi.findFirst({
+              where: {
+                userId: usuarioId,
+              },
+              orderBy: {
+                id: 'desc',
+              },
+            });
+
+            if (!cartao) throw new BadRequestException('Cartão não encontrado');
+
+            const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
+              valor: confirmarVisitaDto.valor * 100,
+              parcela: 1,
+              token: cartao.cardToken,
+              usuarioId,
+            });
+
+            const idCobranca = uuid().substring(0, 15);
+
+            const requisicao = await transaction.requisicao.create({
+              data: {
+                merchantOrderId: idCobranca,
+                chargeId: requisicaoEfiPay.charge_id,
+                total: requisicaoEfiPay.total,
+                status: requisicaoEfiPay.status,
+                creditCardEfi_Id: cartao.id,
+                cartaoId: cartao.id,
+                parcela: requisicaoEfiPay.installments,
+                usuarioId: usuarioId,
+              },
+            });
+
+            visita = await transaction.visita.update({
+              include,
+              data: {
+                pago: true,
+                requisicaoId: requisicao.id,
+              },
+              where: {
+                id: visitaId,
+              },
+            });
+          } else {
+            visita = await transaction.visita.update({
+              include,
+              data: {
+                pago: true,
+              },
+              where: {
+                id: visitaId,
+              },
+            });
+          }
+        } else {
+          throw new BadRequestException('Dados inválidos');
+        }
+
+        const solicitacao = await transaction.solicitacao.findFirst({
           where: {
-            id: visitaId,
+            id: visita.solicitacaoId,
           },
         });
-      } else if (confirmarVisitaDto.pago) {
-        if (confirmarVisitaDto.valor > 0) {
-          const cartao = await transaction.creditCardEfi.findFirst({
+
+        if (visita)
+          visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
             where: {
-              userId: usuarioId,
-            },
-            orderBy: {
-              id: 'desc',
-            },
-          });
-
-          if (!cartao) throw new BadRequestException('Cartão não encontrado');
-
-          const requisicaoEfiPay = await this.efiPayService.gerarCobranca({
-            valor: 30000,
-            parcela: 1,
-            token: cartao.cardToken,
-            usuarioId,
-          });
-
-          const idCobranca = uuid().substring(0, 15);
-
-          const requisicao = await transaction.requisicao.create({
-            data: {
-              merchantOrderId: idCobranca,
-              chargeId: requisicaoEfiPay.charge_id,
-              total: requisicaoEfiPay.total,
-              status: requisicaoEfiPay.status,
-              creditCardEfi_Id: cartao.id,
-              cartaoId: cartao.id,
-              parcela: requisicaoEfiPay.installments,
-              usuarioId: usuarioId,
-            },
-          });
-
-          visita = await transaction.visita.update({
-            include,
-            data: {
-              pago: true,
-              requisicaoId: requisicao.id,
-            },
-            where: {
-              id: visitaId,
-            },
-          });
-        } else {
-          visita = await transaction.visita.update({
-            include,
-            data: {
-              pago: true,
-            },
-            where: {
-              id: visitaId,
-            },
-          });
-        }
-      } else {
-        throw new BadRequestException('Dados inválidos');
-      }
-
-      const solicitacao = await transaction.solicitacao.findFirst({
-        where: {
-          id: visita.solicitacaoId,
-        },
-      });
-
-      if (visita)
-        visita['usuarioColaborador'] = await this.prisma.usuario.findMany({
-          where: {
-            visitaUsuarioColaborador: {
-              some: {
-                visitaId: visita.id,
+              visitaUsuarioColaborador: {
+                some: {
+                  visitaId: visita.id,
+                },
               },
             },
-          },
-        });
+          });
 
-      const valores = [
-        `Data da criação: ${visita.dataCriacao.toLocaleString('pt-BR')}`,
-        `Data da visita: ${visita.dataVisita.toLocaleString('pt-BR')}`,
-        `Valor: R$ ${visita.valor.toNumber().toLocaleString('pt-BR')}`,
-      ];
+        const valores = [
+          `Data da criação: ${visita.dataCriacao.toLocaleString('pt-BR')}`,
+          `Data da visita: ${visita.dataVisita.toLocaleString('pt-BR')}`,
+          `Valor: R$ ${visita.valor.toNumber().toLocaleString('pt-BR')}`,
+        ];
 
-      const data = {
-        visitaId: visita.id,
-        solicitacaoId: solicitacao.id,
-        hasMaterial: solicitacao.material,
-      };
+        const data = {
+          visitaId: visita.id,
+          solicitacaoId: solicitacao.id,
+          hasMaterial: solicitacao.material,
+        };
 
-      await this.enviarNotificacao(
-        solicitacao.usuarioId,
-        valores,
-        data,
-        TipoVisitaEnum.CADASTRO,
-      );
+        await this.enviarNotificacao(
+          solicitacao.usuarioId,
+          valores,
+          data,
+          TipoVisitaEnum.CADASTRO,
+        );
 
-      return visita;
-    });
+        return visita;
+      },
+      {
+        maxWait: 5000,
+        timeout: 10000,
+      },
+    );
   }
 
   async avaliar(visitaId: number, avaliarVisitaDto: AvaliarVisitaDto) {
     if (isNaN(visitaId)) throw new BadRequestException('Visita inválida');
 
-    return this.prisma.$transaction(async (transaction) => {
-      const avaliacao = await transaction.avaliacao.create({
-        data: {
-          nota: avaliarVisitaDto.nota,
-          observacao: avaliarVisitaDto.observacao,
-        },
-      });
+    return this.prisma.$transaction(
+      async (transaction) => {
+        const avaliacao = await transaction.avaliacao.create({
+          data: {
+            nota: avaliarVisitaDto.nota,
+            observacao: avaliarVisitaDto.observacao,
+          },
+        });
 
-      await transaction.visita.update({
-        data: {
-          avaliacaoId: avaliacao.id,
-        },
-        where: {
-          id: visitaId,
-        },
-      });
+        await transaction.visita.update({
+          data: {
+            avaliacaoId: avaliacao.id,
+          },
+          where: {
+            id: visitaId,
+          },
+        });
 
-      return avaliacao;
+        return avaliacao;
+      },
+      {
+        maxWait: 5000,
+        timeout: 10000,
+      },
+    );
+  }
+
+  async deletar(id: number) {
+    if (isNaN(id)) throw new BadRequestException('Visita não encontrada');
+
+    const visita = await this.prisma.visita.delete({
+      where: {
+        id,
+      },
+    });
+
+    if (!visita) throw new BadRequestException('Visita não encontrada');
+
+    return this.prisma.visita.delete({
+      where: {
+        id,
+      },
     });
   }
 

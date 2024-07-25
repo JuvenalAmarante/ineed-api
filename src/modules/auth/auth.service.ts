@@ -57,34 +57,40 @@ export class AuthService {
   }
 
   async recuperarSenha(recuperarSenhaDto: RecuperarSenhaDto) {
-    return this.prisma.$transaction(async (transaction) => {
-      const usuario = await this.prisma.usuario.findFirst({
-        where: {
-          email: recuperarSenhaDto.email,
-        },
-      });
+    return this.prisma.$transaction(
+      async (transaction) => {
+        const usuario = await this.prisma.usuario.findFirst({
+          where: {
+            email: recuperarSenhaDto.email,
+          },
+        });
 
-      if (!usuario)
-        throw new BadRequestException('Email de recuperação não encontrado');
+        if (!usuario)
+          throw new BadRequestException('Email de recuperação não encontrado');
 
-      const novaSenha = gerarSenhaPadrao();
+        const novaSenha = gerarSenhaPadrao();
 
-      await transaction.usuario.update({
-        data: {
-          senha: encriptar(novaSenha),
-        },
-        where: {
-          id: usuario.id,
-        },
-      });
+        await transaction.usuario.update({
+          data: {
+            senha: encriptar(novaSenha),
+          },
+          where: {
+            id: usuario.id,
+          },
+        });
 
-      const conteudoEmail = `<b> Você Solicitou a Recuperação de sua Senha<b/><b/><b/><br/> Nesse momento sua senha foi alterada, Por favor utilize essa senha padrão para logar com seu Email. <br/> <br/><b> Email : ${recuperarSenhaDto.email} <b/> <br/> <b> Senha : ${novaSenha} <b/>`;
+        const conteudoEmail = `<b> Você Solicitou a Recuperação de sua Senha<b/><b/><b/><br/> Nesse momento sua senha foi alterada, Por favor utilize essa senha padrão para logar com seu Email. <br/> <br/><b> Email : ${recuperarSenhaDto.email} <b/> <br/> <b> Senha : ${novaSenha} <b/>`;
 
-      await this.mailService.enviarEmailHtml(
-        recuperarSenhaDto.email,
-        'Recuperação de senha',
-        conteudoEmail,
-      );
-    });
+        await this.mailService.enviarEmailHtml(
+          recuperarSenhaDto.email,
+          'Recuperação de senha',
+          conteudoEmail,
+        );
+      },
+      {
+        maxWait: 5000,
+        timeout: 10000,
+      },
+    );
   }
 }
