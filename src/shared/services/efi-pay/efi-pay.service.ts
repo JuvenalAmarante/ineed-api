@@ -135,7 +135,7 @@ export class EfiPayService {
           billing_address: {
             street: usuario.endereco,
             number: usuario.numero,
-            neighborhood: usuario.bairro,
+            neighborhood: 'José walter',
             zipcode: usuario.cep,
             city: usuario.cidade,
             complement: usuario.complemento,
@@ -154,16 +154,20 @@ export class EfiPayService {
         })
         .subscribe({
           next: (res: AxiosResponse<CobrancaEfiPay, any>) => {
-            if (!!res.data.data.refusal)
+            if (!!res.data.data.refusal) {
+              console.log('Recusado: ', res.data.data.refusal.reason);
+
               reject(
                 new BadRequestException(
-                  `Ocorreu um erro ao gerar a cobrança: ${res.data.data.refusal.reason}`,
+                  `Cobrança Recusada: ${res.data.data.refusal.reason}`,
                 ),
               );
+            }
 
             resolve(res.data.data);
           },
-          error: () => {
+          error: (err) => {
+            console.log('Erro: ', err.response.data);
             reject(
               new BadRequestException('Ocorreu um erro ao gerar a cobrança'),
             );

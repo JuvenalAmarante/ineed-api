@@ -119,6 +119,23 @@ export class SolicitacaoService {
           throw new BadRequestException('Solicitação já cadastrada');
 
         solicitacao = await transaction.solicitacao.create({
+          include: {
+            servicoSolicitacao: {
+              select: {
+                servico: {
+                  include: { categoria: true },
+                },
+              },
+            },
+            imagem: true,
+            usuario: {
+              select: {
+                id: true,
+                nome: true,
+                email: true,
+              },
+            },
+          },
           data: {
             dataSolicitacao: new Date(),
             usuarioId,
@@ -359,6 +376,7 @@ export class SolicitacaoService {
             dataSolicitacao: 'desc',
           },
         });
+        break;
 
       case PerfilEnum.ADMIN:
       case PerfilEnum.COLABORADOR:
@@ -387,6 +405,7 @@ export class SolicitacaoService {
             dataSolicitacao: 'desc',
           },
         });
+        break;
     }
 
     return solicitacoes.map((solicitacao) => ({
