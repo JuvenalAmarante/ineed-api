@@ -76,7 +76,7 @@ export class VisitaController {
     };
   }
 
-  @Patch()
+  @Patch('avaliacao')
   async avaliar(
     @Query('id') visitaId: string,
     @Body() avaliarVisitaDto: AvaliarVisitaDto,
